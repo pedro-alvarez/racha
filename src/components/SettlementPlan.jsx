@@ -1,7 +1,7 @@
 /**
- * Plano de Acerto: quem paga quem.
- * Toggle "Simplificado" alterna entre o plano otimizado (menos transferências)
- * e todas as dívidas par a par.
+ * Plano de Acerto em cards (grade 2 colunas), como na referência:
+ * avatar + nome, rótulo "VOCÊ DEVE" / "TE DEVE" e o valor em destaque.
+ * Toggle "Simplificado" alterna entre plano otimizado e dívidas par a par.
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -15,10 +15,8 @@ export default function SettlementPlan({ simplified, pairwise }) {
   const [useSimplified, setUseSimplified] = useState(true);
   const transfers = useSimplified ? simplified : pairwise;
 
-  // Ordena colocando primeiro as transferências que envolvem o usuário.
   const mine = transfers.filter((t) => t.from === currentUser.id || t.to === currentUser.id);
   const others = transfers.filter((t) => t.from !== currentUser.id && t.to !== currentUser.id);
-  const ordered = [...mine, ...others];
 
   return (
     <section className="mt-7">
@@ -26,7 +24,7 @@ export default function SettlementPlan({ simplified, pairwise }) {
         <h2 className="text-lg font-bold">Plano de Acerto</h2>
         <button
           onClick={() => setUseSimplified((v) => !v)}
-          className="flex items-center gap-2 text-xs font-semibold text-muted-light"
+          className="flex items-center gap-2 text-xs font-semibold text-accent-bright"
         >
           Simplificado
           <span
@@ -43,42 +41,65 @@ export default function SettlementPlan({ simplified, pairwise }) {
         </button>
       </div>
 
-      {ordered.length === 0 ? (
+      {transfers.length === 0 ? (
         <div className="card-flat p-5 mt-3 text-sm text-muted text-center">
           Ninguém deve nada — contas em dia ✨
         </div>
       ) : (
-        <ul className="mt-3 space-y-2.5">
-          {ordered.map((t, i) => {
-            const from = userById(t.from);
-            const to = userById(t.to);
-            const iOwe = t.from === currentUser.id;
-            const owedToMe = t.to === currentUser.id;
-            const other = iOwe ? to : from;
-            return (
-              <li key={`${t.from}-${t.to}-${i}`} className="card-flat p-4 flex items-center gap-3">
-                <Avatar user={other} size="md" onClick={() => navigate(`/perfil/${other.id}`)} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{other.name}</p>
-                  <p className="label-caps mt-0.5">
-                    {iOwe
-                      ? 'Você deve'
-                      : owedToMe
-                        ? 'Te deve'
-                        : `${firstName(from.name)} deve a ${firstName(to.name)}`}
-                  </p>
-                </div>
-                <p
-                  className={`text-lg font-extrabold ${
-                    iOwe ? 'text-accent-bright' : owedToMe ? 'text-positive' : 'text-white'
-                  }`}
-                >
-                  {formatCentsAbs(t.amount)}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          {/* suas dívidas/créditos em cards */}
+          {mine.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              {mine.map((t, i) => {
+                const iOwe = t.from === currentUser.id;
+                const other = userById(iOwe ? t.to : t.from);
+                return (
+                  <button
+                    key={`m-${i}`}
+                    onClick={() => navigate(`/perfil/${other.id}`)}
+                    className="card-gradient p-4 text-left hover:brightness-110 transition"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Avatar user={other} size="sm" />
+                      <p className="font-bold truncate">{firstName(other.name)}</p>
+                    </div>
+                    <p className="label-caps mt-3.5">{iOwe ? 'Você deve' : 'Te deve'}</p>
+                    <p
+                      className={`mt-1 text-2xl font-extrabold tracking-tight ${
+                        iOwe ? 'text-accent-bright' : 'text-positive'
+                      }`}
+                    >
+                      {formatCentsAbs(t.amount)}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* dívidas entre outras pessoas */}
+          {others.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {others.map((t, i) => {
+                const from = userById(t.from);
+                const to = userById(t.to);
+                return (
+                  <li key={`o-${i}`} className="card-flat px-4 py-3 flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      <Avatar user={from} size="sm" ring />
+                      <Avatar user={to} size="sm" ring />
+                    </div>
+                    <p className="flex-1 text-sm text-muted-light truncate">
+                      <span className="font-semibold text-white">{firstName(from.name)}</span> deve a{' '}
+                      <span className="font-semibold text-white">{firstName(to.name)}</span>
+                    </p>
+                    <p className="font-bold">{formatCentsAbs(t.amount)}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
       )}
     </section>
   );

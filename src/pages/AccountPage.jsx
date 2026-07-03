@@ -1,67 +1,106 @@
 /**
- * Conta: perfil mockado (com Pix em destaque) + placeholder EXPLÍCITO de
- * autenticação. Quando o backend existir, este é o ponto de entrada do login.
+ * Minha Conta — como na referência: avatar central com lápis, plano,
+ * seções GERAL e PAGAMENTOS, mais o placeholder explícito de autenticação.
  */
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, KeyRound, LogOut, QrCode, RotateCcw, ShieldAlert } from 'lucide-react';
+import {
+  Bell,
+  ChevronRight,
+  CreditCard,
+  KeyRound,
+  Landmark,
+  LogOut,
+  Pencil,
+  RotateCcw,
+  Settings,
+  ShieldAlert,
+  UserRound,
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useFriendBalances } from '../hooks/useFriendBalances';
+import { maskPix } from '../lib/format';
 import Avatar from '../components/Avatar';
-import { PIX_TYPES } from './ProfilePage';
+
+function Row({ Icon, label, value, dot, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full card-flat p-4 flex items-center gap-3.5 text-left hover:bg-white/5 transition"
+    >
+      <span className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-muted-light shrink-0">
+        <Icon size={18} />
+      </span>
+      <span className="flex-1 font-semibold text-sm">{label}</span>
+      {value && <span className="text-xs text-muted font-semibold">{value}</span>}
+      {dot && <span className="w-2 h-2 rounded-full bg-accent-bright" />}
+      <ChevronRight size={16} className="text-muted shrink-0" />
+    </button>
+  );
+}
 
 export default function AccountPage() {
   const { currentUser, resetDemo } = useApp();
+  const balances = useFriendBalances();
   const navigate = useNavigate();
+
+  const hasPendingDebts = Object.values(balances).some((v) => v !== 0);
+  const goProfile = () => navigate(`/perfil/${currentUser.id}`);
 
   return (
     <div className="pt-4 md:pt-0">
-      <h1 className="text-3xl font-extrabold tracking-tight">Conta</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Minha Conta</h1>
+        <button
+          onClick={goProfile}
+          className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-muted-light hover:text-white transition"
+          aria-label="Configurações"
+        >
+          <Settings size={18} />
+        </button>
+      </div>
 
-      <button
-        onClick={() => navigate(`/perfil/${currentUser.id}`)}
-        className="w-full card-gradient p-6 mt-6 flex items-center gap-4 text-left hover:brightness-110 transition"
-      >
-        <Avatar user={currentUser} size="xl" />
-        <div className="min-w-0 flex-1">
-          <p className="text-xl font-bold truncate">{currentUser?.name}</p>
-          <p className="text-sm text-muted truncate">{currentUser?.email}</p>
-          <span className="inline-block mt-2 px-2.5 py-1 rounded-full text-[11px] font-semibold text-positive bg-positive/15">
-            Conta demo
+      {/* Perfil central */}
+      <div className="mt-7 flex flex-col items-center text-center">
+        <button onClick={goProfile} className="relative">
+          <Avatar user={currentUser} size="xl" />
+          <span className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-accent flex items-center justify-center ring-4 ring-ink">
+            <Pencil size={12} />
           </span>
-        </div>
-        <ChevronRight size={18} className="text-muted shrink-0" />
-      </button>
+        </button>
+        <p className="mt-3.5 text-xl font-extrabold">{currentUser?.name}</p>
+        <p className="text-sm text-muted">{currentUser?.email}</p>
+        <span className="mt-2.5 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold tracking-widest uppercase bg-gradient-to-br from-accent to-accent-bright">
+          {currentUser?.role === 'admin' ? 'Admin · Plano Pro' : 'Plano Pro'}
+        </span>
+      </div>
 
-      {/* Pix em destaque */}
-      <button
-        onClick={() => navigate(`/perfil/${currentUser.id}`)}
-        className="w-full card-flat p-5 mt-4 text-left hover:bg-white/5 transition"
-      >
-        <div className="flex items-center justify-between">
-          <p className="label-caps flex items-center gap-1.5">
-            <QrCode size={13} /> Sua chave Pix
-          </p>
-          {currentUser?.pix && (
-            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-accent/20 text-accent-bright uppercase tracking-wide">
-              {PIX_TYPES[currentUser.pix.type] ?? currentUser.pix.type}
-            </span>
-          )}
-        </div>
-        <p className="mt-2 font-bold break-all">
-          {currentUser?.pix?.key ?? (
-            <span className="text-muted font-normal">Nenhuma chave — toque para adicionar</span>
-          )}
-        </p>
-        <p className="mt-1 text-[11px] text-muted">Toque para editar perfil, foto e Pix</p>
-      </button>
+      {/* GERAL */}
+      <p className="label-caps mt-8">Geral</p>
+      <div className="mt-3 space-y-2.5">
+        <Row Icon={UserRound} label="Dados Pessoais" onClick={goProfile} />
+        <Row
+          Icon={Bell}
+          label="Notificações"
+          dot={hasPendingDebts}
+          onClick={() => navigate('/notificacoes')}
+        />
+        <Row Icon={KeyRound} label="Segurança" onClick={() => navigate('/login')} />
+      </div>
+
+      {/* PAGAMENTOS */}
+      <p className="label-caps mt-7">Pagamentos</p>
+      <div className="mt-3 space-y-2.5">
+        <Row Icon={CreditCard} label="Métodos de Pagamento" value="em breve" onClick={goProfile} />
+        <Row Icon={Landmark} label="Chave PIX" value={maskPix(currentUser?.pix) ?? 'adicionar'} onClick={goProfile} />
+      </div>
 
       {/* ---------------------------------------------------------------- */}
-      {/* PLACEHOLDER DE AUTENTICAÇÃO                                       */}
-      {/* Quando o backend real existir:                                    */}
-      {/* 1. dataService.login() passa a chamar POST /auth/login            */}
+      {/* PLACEHOLDER DE AUTENTICAÇÃO — quando o backend existir:           */}
+      {/* 1. dataService.login() chama POST /auth/login                     */}
       {/* 2. o token fica no dataService (nunca nos componentes)            */}
-      {/* 3. LoginPage vira o gate real de entrada do app                   */}
+      {/* 3. LoginPage vira o gate real de entrada                          */}
       {/* ---------------------------------------------------------------- */}
-      <section className="card-flat p-5 mt-4 border-dashed border-accent/40">
+      <section className="card-flat p-5 mt-7 border-dashed border-accent/40">
         <div className="flex items-start gap-3">
           <span className="w-10 h-10 rounded-2xl bg-accent/15 text-accent-bright flex items-center justify-center shrink-0">
             <ShieldAlert size={18} />
@@ -69,20 +108,14 @@ export default function AccountPage() {
           <div>
             <p className="font-bold">Autenticação real em breve</p>
             <p className="text-sm text-muted mt-1">
-              Hoje você está logado como usuário de demonstração. Este bloco marca onde
-              entrará o login com backend (e-mail/senha, Google etc.).
+              Você está logado como usuário de demonstração. Este bloco marca onde entrará o
+              login com backend (e-mail/senha, Google etc.).
             </p>
-            <button
-              onClick={() => navigate('/login')}
-              className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-bright"
-            >
-              <KeyRound size={15} /> Ver tela de login (protótipo)
-            </button>
           </div>
         </div>
       </section>
 
-      <section className="mt-4 space-y-2.5">
+      <div className="mt-4 space-y-2.5">
         <button
           onClick={async () => {
             if (confirm('Restaurar os dados de demonstração? Tudo que você criou será apagado.')) {
@@ -102,7 +135,7 @@ export default function AccountPage() {
           <LogOut size={18} className="text-accent-bright" />
           <span className="text-sm font-semibold text-accent-bright">Sair (simulado)</span>
         </button>
-      </section>
+      </div>
     </div>
   );
 }

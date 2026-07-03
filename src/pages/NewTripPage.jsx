@@ -11,6 +11,7 @@ export default function NewTripPage() {
   const { friends, currentUser, createTrip, addFriend } = useApp();
   const navigate = useNavigate();
 
+  const [type, setType] = useState('viagem'); // viagem | role
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('✈️');
   const [startDate, setStartDate] = useState('');
@@ -46,8 +47,9 @@ export default function NewTripPage() {
     const trip = await createTrip({
       name: name.trim(),
       emoji,
+      type,
       startDate,
-      endDate,
+      endDate: type === 'role' ? startDate : endDate,
       members: [currentUser.id, ...selected],
     });
     navigate(`/viagem/${trip.id}`);
@@ -61,14 +63,36 @@ export default function NewTripPage() {
       <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted hover:text-white">
         <ArrowLeft size={16} /> Voltar
       </button>
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Nova viagem</h1>
+      <h1 className="mt-3 text-3xl font-extrabold tracking-tight">
+        {type === 'role' ? 'Novo rolê' : 'Nova viagem'}
+      </h1>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        {/* Tipo: viagem (vários dias) ou rolê (um dia) */}
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { id: 'viagem', label: '✈️ Viagem', desc: 'vários dias' },
+            { id: 'role', label: '🎉 Rolê', desc: 'um dia só' },
+          ].map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setType(opt.id)}
+              className={`p-3.5 rounded-2xl border text-left transition ${
+                type === opt.id ? 'border-accent bg-accent/15' : 'border-white/10 bg-white/5'
+              }`}
+            >
+              <p className="font-bold text-sm">{opt.label}</p>
+              <p className="text-[11px] text-muted mt-0.5">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+
         <div>
           <label className="label-caps">Nome</label>
           <input
             className={`${inputCls} mt-2`}
-            placeholder="Ex.: Ubatuba 2026"
+            placeholder={type === 'role' ? 'Ex.: Churras de Julho' : 'Ex.: Ubatuba 2026'}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -93,14 +117,16 @@ export default function NewTripPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label-caps">Início</label>
+          <div className={type === 'role' ? 'col-span-2' : ''}>
+            <label className="label-caps">{type === 'role' ? 'Data' : 'Início'}</label>
             <input type="date" className={`${inputCls} mt-2`} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
-          <div>
-            <label className="label-caps">Fim</label>
-            <input type="date" className={`${inputCls} mt-2`} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          </div>
+          {type !== 'role' && (
+            <div>
+              <label className="label-caps">Fim</label>
+              <input type="date" className={`${inputCls} mt-2`} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+          )}
         </div>
 
         <div>

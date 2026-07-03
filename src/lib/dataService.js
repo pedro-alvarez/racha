@@ -24,7 +24,7 @@ import {
   CURRENT_USER_ID,
 } from '../mock/seedData';
 
-const STORAGE_KEY = 'racha:db:v2';
+const STORAGE_KEY = 'racha:db:v3';
 
 // Pequeno delay para simular latência de rede e garantir que a UI
 // já esteja preparada para estados de carregamento reais.
@@ -119,7 +119,7 @@ export async function getTrip(tripId) {
   return loadDb().trips.find((t) => t.id === tripId) ?? null;
 }
 
-export async function createTrip({ name, emoji, startDate, endDate, members }) {
+export async function createTrip({ name, emoji, type, startDate, endDate, members }) {
   // TODO backend: POST /trips
   await simulateNetwork();
   const db = loadDb();
@@ -127,6 +127,7 @@ export async function createTrip({ name, emoji, startDate, endDate, members }) {
     id: uid('t'),
     name,
     emoji: emoji || '✈️',
+    type: type || 'viagem',
     startDate,
     endDate,
     members,
@@ -199,9 +200,13 @@ export async function resetDemoData() {
 
 /** Atualiza perfil de um usuário (nome, foto, chave Pix…). */
 export async function updateUser(userId, patch) {
-  // TODO backend: PATCH /users/:id
+  // TODO backend: PATCH /users/:id (o servidor valida a permissão de verdade)
   await simulateNetwork();
   const db = loadDb();
+  const actor = db.users.find((u) => u.id === db.currentUserId);
+  if (userId !== db.currentUserId && actor?.role !== 'admin') {
+    throw new Error('Você não tem permissão para editar o perfil de outra pessoa.');
+  }
   const i = db.users.findIndex((u) => u.id === userId);
   if (i < 0) return null;
   db.users[i] = { ...db.users[i], ...patch };

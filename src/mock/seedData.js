@@ -8,7 +8,7 @@
 export const CURRENT_USER_ID = 'u-pedro';
 
 export const seedUsers = [
-  { id: 'u-pedro', name: 'Pedro Certo', email: 'pedro.a.certo@gmail.com', color: '#F0146B' , photo: null, pix: { type: 'email', key: 'pedro.a.certo@gmail.com' } },
+  { id: 'u-pedro', name: 'Pedro Certo', email: 'pedro.a.certo@gmail.com', color: '#F0146B', role: 'admin' , photo: null, pix: { type: 'email', key: 'pedro.a.certo@gmail.com' } },
   { id: 'u-marina', name: 'Marina Lopes', email: 'marina.lopes@gmail.com', color: '#8B5CF6' , photo: null, pix: { type: 'cpf', key: '123.456.789-00' } },
   { id: 'u-lucas', name: 'Lucas Ferreira', email: 'lucas.fe@gmail.com', color: '#06B6D4' , photo: null, pix: { type: 'celular', key: '(11) 98888-1234' } },
   { id: 'u-fernanda', name: 'Fernanda Dias', email: 'fe.dias@gmail.com', color: '#F59E0B' , photo: null, pix: { type: 'aleatoria', key: 'f3d1c2b4-9a87-4e21-b0aa-5d6e7f8a9b0c' } },
@@ -22,6 +22,7 @@ export const seedTrips = [
     id: 't-ubatuba',
     name: 'Ubatuba 2026',
     emoji: '🏖️',
+    type: 'viagem',
     startDate: '2026-07-10',
     endDate: '2026-07-14',
     members: ['u-pedro', 'u-marina', 'u-lucas', 'u-fernanda', 'u-rafa'],
@@ -31,6 +32,7 @@ export const seedTrips = [
     id: 't-monteverde',
     name: 'Chalé em Monte Verde',
     emoji: '🏔️',
+    type: 'viagem',
     startDate: '2026-08-21',
     endDate: '2026-08-23',
     members: ['u-pedro', 'u-bia', 'u-thiago', 'u-marina'],
@@ -40,6 +42,7 @@ export const seedTrips = [
     id: 't-churras',
     name: 'Churras de Julho',
     emoji: '🍖',
+    type: 'role',
     startDate: '2026-07-05',
     endDate: '2026-07-05',
     members: ['u-pedro', 'u-lucas', 'u-rafa', 'u-thiago'],

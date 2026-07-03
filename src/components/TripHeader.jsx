@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import SyncBadge from './SyncBadge';
 import AvatarStack from './AvatarStack';
 import { useApp } from '../context/AppContext';
-import { formatDateRange } from '../lib/format';
+import { formatDateRange, tripTypeLabel } from '../lib/format';
 
 export default function TripHeader({ trip }) {
   const { userById } = useApp();
@@ -28,6 +28,7 @@ export default function TripHeader({ trip }) {
       </h1>
       <div className="mt-2 flex items-center justify-between">
         <p className="text-sm text-muted">
+          <span className={`font-bold ${trip.type === 'role' ? 'text-accent-bright' : 'text-muted-light'}`}>{tripTypeLabel(trip.type)}</span>{' · '}
           {trip.members.length} membros · {formatDateRange(trip.startDate, trip.endDate)}
         </p>
         <AvatarStack users={members} max={4} />

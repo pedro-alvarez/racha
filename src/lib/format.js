@@ -71,3 +71,17 @@ export function dayLabel(iso) {
   if (diff === 1) return 'Ontem';
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
+
+/** Hora local HH:MM. */
+export function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Chave Pix mascarada para listas: "cpf***". */
+export function maskPix(pix) {
+  if (!pix) return null;
+  return `${pix.type}***`;
+}
+
+/** Rótulo do tipo de grupo. */
+export const tripTypeLabel = (type) => (type === 'role' ? 'Rolê' : 'Viagem');

@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Copy, Pencil, QrCode } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Lock, Pencil, QrCode } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useFriendBalances } from '../hooks/useFriendBalances';
 import { formatCentsAbs } from '../lib/format';
@@ -27,6 +27,8 @@ export default function ProfilePage() {
 
   const user = userById(userId);
   const isMe = userId === currentUser?.id;
+  const isAdmin = currentUser?.role === 'admin';
+  const canEdit = isMe || isAdmin; // só você mesmo — ou o admin — edita um perfil
   const net = balances[userId] ?? 0;
 
   const [editing, setEditing] = useState(false);
@@ -75,23 +77,36 @@ export default function ProfilePage() {
         <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted hover:text-white">
           <ArrowLeft size={16} /> Voltar
         </button>
-        <button
-          onClick={() => setEditing((v) => !v)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/5 text-xs font-semibold text-muted-light hover:text-white transition"
-        >
-          <Pencil size={13} /> {editing ? 'Cancelar' : 'Editar perfil'}
-        </button>
+        {canEdit ? (
+          <button
+            onClick={() => setEditing((v) => !v)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/5 text-xs font-semibold text-muted-light hover:text-white transition"
+          >
+            <Pencil size={13} /> {editing ? 'Cancelar' : isMe ? 'Editar perfil' : 'Editar (admin)'}
+          </button>
+        ) : (
+          <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/5 text-xs font-semibold text-muted">
+            <Lock size={12} /> Somente leitura
+          </span>
+        )}
       </div>
 
       <div className="mt-6 flex flex-col items-center text-center">
         <Avatar user={editing ? { ...user, ...form, photo: form.photo || null } : user} size="xl" />
         <h1 className="mt-4 text-2xl font-extrabold">{user?.name}</h1>
         <p className="text-sm text-muted">{user?.email}</p>
-        {isMe && (
-          <span className="mt-2 px-2.5 py-1 rounded-full text-[11px] font-semibold text-positive bg-positive/15">
-            Você
-          </span>
-        )}
+        <div className="mt-2 flex gap-2">
+          {isMe && (
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-positive bg-positive/15">
+              Você
+            </span>
+          )}
+          {user?.role === 'admin' && (
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide bg-gradient-to-br from-accent to-accent-bright">
+              Admin
+            </span>
+          )}
+        </div>
       </div>
 
       {!editing ? (
@@ -123,10 +138,12 @@ export default function ProfilePage() {
               </div>
             ) : (
               <p className="mt-3 text-sm text-muted">
-                Nenhuma chave cadastrada.{' '}
-                <button onClick={() => setEditing(true)} className="text-accent-bright font-semibold">
-                  Adicionar
-                </button>
+                Nenhuma chave cadastrada.
+                {canEdit && (
+                  <button onClick={() => setEditing(true)} className="ml-1 text-accent-bright font-semibold">
+                    Adicionar
+                  </button>
+                )}
               </p>
             )}
           </section>
