@@ -107,7 +107,7 @@ export default function ActivityPage() {
             <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest text-accent-bright bg-accent/10 border border-accent/20">
               {group.label}
             </span>
-            <ul className="mt-3">
+            <ul className="mt-3 stagger">
               {group.items.map((item, i) => (
                 <TimelineItem key={item.id} item={item} isLast={i === group.items.length - 1} />
               ))}

@@ -32,3 +32,42 @@
   background: rgba(255, 255, 255, 0.12);
   border-radius: 3px;
 }
+
+/* ---------- animações ---------- */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.page-enter { animation: pageIn 0.28s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.stagger > * { animation: fadeUp 0.35s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.stagger > *:nth-child(n + 8) { animation-delay: 0.3s; }
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(48px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-48px); }
+  to { opacity: 1; transform: none; }
+}
+.slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.slide-in-left { animation: slideInLeft 0.3s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+
+@keyframes fabPop {
+  0% { transform: scale(0) rotate(-90deg); }
+  70% { transform: scale(1.12) rotate(8deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.fab-pop { animation: fabPop 0.4s cubic-bezier(0.2, 0.7, 0.3, 1.4) 0.15s both; }

@@ -2,7 +2,7 @@
  * Itens de atividade em dois formatos:
  * - "row" (Visão Geral): linha compacta com o SEU impacto à direita
  *   (Você deve / Emprestou / pagou), como na referência.
- * - "timeline" (Histórico): card com "Sua parte", hora e badge Sincronizado.
+ * - "timeline" (Histórico): card com "Sua parte" e hora.
  */
 import { useNavigate } from 'react-router-dom';
 import Avatar from './Avatar';
@@ -169,12 +169,7 @@ export function TimelineItem({ item, isLast }) {
           </div>
         )}
 
-        <div className="mt-2.5 flex items-center justify-between">
-          <p className="text-[11px] text-muted">{formatTime(item.createdAt)}</p>
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-positive">
-            <span className="w-1.5 h-1.5 rounded-full bg-positive" /> Sincronizado
-          </span>
-        </div>
+        <p className="mt-2.5 text-[11px] text-muted">{formatTime(item.createdAt)}</p>
       </div>
     </li>
   );
@@ -188,7 +183,7 @@ export default function ActivityList({ items, limit, emptyText = 'Nada por aqui 
   }
 
   return (
-    <ul className="mt-3 space-y-2.5">
+    <ul className="mt-3 space-y-2.5 stagger">
       {list.map((item) => (
         <ActivityItem key={item.id} item={item} />
       ))}

@@ -92,7 +92,7 @@ export default function FriendsPage() {
       )}
 
       <p className="label-caps mt-7">Seus amigos ({friends.length})</p>
-      <ul className="mt-3 space-y-2.5">
+      <ul className="mt-3 space-y-2.5 stagger">
         {friends.map((f) => {
           const net = balances[f.id] ?? 0;
           return (

@@ -1,7 +1,6 @@
 /** Header da viagem: badge sync, nome, membros + datas, avatares, engrenagem. */
 import { Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import SyncBadge from './SyncBadge';
 import AvatarStack from './AvatarStack';
 import { useApp } from '../context/AppContext';
 import { formatDateRange, tripTypeLabel } from '../lib/format';
@@ -13,8 +12,7 @@ export default function TripHeader({ trip }) {
 
   return (
     <header className="pt-4 md:pt-0">
-      <div className="flex items-center justify-between">
-        <SyncBadge />
+      <div className="flex items-center justify-end">
         <button
           aria-label="Configurações da viagem"
           onClick={() => navigate('/viagens')}

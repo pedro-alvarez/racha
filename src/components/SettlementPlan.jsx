@@ -49,7 +49,7 @@ export default function SettlementPlan({ simplified, pairwise }) {
         <>
           {/* suas dívidas/créditos em cards */}
           {mine.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="grid grid-cols-2 gap-3 mt-3 stagger">
               {mine.map((t, i) => {
                 const iOwe = t.from === currentUser.id;
                 const other = userById(iOwe ? t.to : t.from);

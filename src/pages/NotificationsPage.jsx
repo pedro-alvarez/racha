@@ -44,7 +44,7 @@ export default function NotificationsPage() {
           <p className="text-sm text-muted mt-1">Nenhuma pendência por aqui.</p>
         </div>
       ) : (
-        <ul className="mt-6 space-y-2.5">
+        <ul className="mt-6 space-y-2.5 stagger">
           {notifications.map((n, i) => {
             const iOwe = n.from === currentUser.id;
             const other = userById(iOwe ? n.to : n.from);

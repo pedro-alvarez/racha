@@ -74,7 +74,7 @@ export default function TripsPage() {
     list.length > 0 && (
       <section className="mt-6">
         <p className="label-caps">{title} ({list.length})</p>
-        <ul className="mt-3 space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
+        <ul className="mt-3 space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 stagger">
           {list.map((trip) => (
             <li key={trip.id}>
               <TripCard trip={trip} onOpen={() => open(trip)} />

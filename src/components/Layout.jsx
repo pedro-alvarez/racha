@@ -3,7 +3,7 @@
  * Mobile (< md): conteúdo em coluna + barra de navegação inferior fixa.
  * Desktop (>= md): sidebar fixa à esquerda + conteúdo em área central.
  */
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, ListTodo, CircleUserRound, Wallet } from 'lucide-react';
 import StatusBar from './StatusBar';
 import { useApp } from '../context/AppContext';
@@ -25,6 +25,7 @@ function navClasses(isActive) {
 export default function Layout() {
   const { currentUser, loading } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -70,7 +71,10 @@ export default function Layout() {
       <div className="flex-1 min-w-0">
         <StatusBar />
         <main className="max-w-lg md:max-w-3xl mx-auto px-5 md:px-10 pb-28 md:pb-12 md:pt-8">
-          <Outlet />
+          {/* key na rota faz cada tela entrar com animação */}
+          <div key={location.pathname} className="page-enter">
+            <Outlet />
+          </div>
         </main>
       </div>
 
