@@ -87,6 +87,14 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
+  const updateUser = useCallback(
+    async (userId, patch) => {
+      await dataService.updateUser(userId, patch);
+      await refreshAll();
+    },
+    [refreshAll]
+  );
+
   const resetDemo = useCallback(async () => {
     await dataService.resetDemoData();
     setSelectedTripId(null);
@@ -109,6 +117,7 @@ export function AppProvider({ children }) {
       settleDebt,
       createTrip,
       addFriend,
+      updateUser,
       resetDemo,
     }),
     [
@@ -125,6 +134,7 @@ export function AppProvider({ children }) {
       settleDebt,
       createTrip,
       addFriend,
+      updateUser,
       resetDemo,
     ]
   );

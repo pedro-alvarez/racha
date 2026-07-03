@@ -24,7 +24,7 @@ import {
   CURRENT_USER_ID,
 } from '../mock/seedData';
 
-const STORAGE_KEY = 'racha:db:v1';
+const STORAGE_KEY = 'racha:db:v2';
 
 // Pequeno delay para simular latência de rede e garantir que a UI
 // já esteja preparada para estados de carregamento reais.
@@ -195,4 +195,16 @@ export async function settleDebt(tripId, { from, to, amount, note }) {
 export async function resetDemoData() {
   localStorage.removeItem(STORAGE_KEY);
   loadDb();
+}
+
+/** Atualiza perfil de um usuário (nome, foto, chave Pix…). */
+export async function updateUser(userId, patch) {
+  // TODO backend: PATCH /users/:id
+  await simulateNetwork();
+  const db = loadDb();
+  const i = db.users.findIndex((u) => u.id === userId);
+  if (i < 0) return null;
+  db.users[i] = { ...db.users[i], ...patch };
+  saveDb(db);
+  return db.users[i];
 }

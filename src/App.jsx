@@ -17,6 +17,7 @@ import SettlePage from './pages/SettlePage';
 import FriendsPage from './pages/FriendsPage';
 import ActivityPage from './pages/ActivityPage';
 import AccountPage from './pages/AccountPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/amigos" element={<FriendsPage />} />
             <Route path="/atividade" element={<ActivityPage />} />
             <Route path="/conta" element={<AccountPage />} />
+            <Route path="/perfil/:userId" element={<ProfilePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

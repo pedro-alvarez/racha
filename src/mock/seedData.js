@@ -8,13 +8,13 @@
 export const CURRENT_USER_ID = 'u-pedro';
 
 export const seedUsers = [
-  { id: 'u-pedro', name: 'Pedro Certo', email: 'pedro.a.certo@gmail.com', color: '#F0146B' },
-  { id: 'u-marina', name: 'Marina Lopes', email: 'marina.lopes@gmail.com', color: '#8B5CF6' },
-  { id: 'u-lucas', name: 'Lucas Ferreira', email: 'lucas.fe@gmail.com', color: '#06B6D4' },
-  { id: 'u-fernanda', name: 'Fernanda Dias', email: 'fe.dias@gmail.com', color: '#F59E0B' },
-  { id: 'u-rafa', name: 'Rafa Souza', email: 'rafa.souza@gmail.com', color: '#22C55E' },
-  { id: 'u-bia', name: 'Bia Martins', email: 'bia.martins@gmail.com', color: '#EC4899' },
-  { id: 'u-thiago', name: 'Thiago Nunes', email: 'thiago.n@gmail.com', color: '#3B82F6' },
+  { id: 'u-pedro', name: 'Pedro Certo', email: 'pedro.a.certo@gmail.com', color: '#F0146B' , photo: null, pix: { type: 'email', key: 'pedro.a.certo@gmail.com' } },
+  { id: 'u-marina', name: 'Marina Lopes', email: 'marina.lopes@gmail.com', color: '#8B5CF6' , photo: null, pix: { type: 'cpf', key: '123.456.789-00' } },
+  { id: 'u-lucas', name: 'Lucas Ferreira', email: 'lucas.fe@gmail.com', color: '#06B6D4' , photo: null, pix: { type: 'celular', key: '(11) 98888-1234' } },
+  { id: 'u-fernanda', name: 'Fernanda Dias', email: 'fe.dias@gmail.com', color: '#F59E0B' , photo: null, pix: { type: 'aleatoria', key: 'f3d1c2b4-9a87-4e21-b0aa-5d6e7f8a9b0c' } },
+  { id: 'u-rafa', name: 'Rafa Souza', email: 'rafa.souza@gmail.com', color: '#22C55E' , photo: null, pix: { type: 'email', key: 'rafa.souza@gmail.com' } },
+  { id: 'u-bia', name: 'Bia Martins', email: 'bia.martins@gmail.com', color: '#EC4899' , photo: null, pix: { type: 'cpf', key: '987.654.321-00' } },
+  { id: 'u-thiago', name: 'Thiago Nunes', email: 'thiago.n@gmail.com', color: '#3B82F6' , photo: null, pix: { type: 'celular', key: '(21) 97777-4321' } },
 ];
 
 export const seedTrips = [

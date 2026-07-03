@@ -4,12 +4,14 @@
  * e todas as dívidas par a par.
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Avatar from './Avatar';
 import { useApp } from '../context/AppContext';
 import { formatCentsAbs, firstName } from '../lib/format';
 
 export default function SettlementPlan({ simplified, pairwise }) {
   const { currentUser, userById } = useApp();
+  const navigate = useNavigate();
   const [useSimplified, setUseSimplified] = useState(true);
   const transfers = useSimplified ? simplified : pairwise;
 
@@ -55,7 +57,7 @@ export default function SettlementPlan({ simplified, pairwise }) {
             const other = iOwe ? to : from;
             return (
               <li key={`${t.from}-${t.to}-${i}`} className="card-flat p-4 flex items-center gap-3">
-                <Avatar user={other} size="md" />
+                <Avatar user={other} size="md" onClick={() => navigate(`/perfil/${other.id}`)} />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{other.name}</p>
                   <p className="label-caps mt-0.5">

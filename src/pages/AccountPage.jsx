@@ -1,11 +1,12 @@
 /**
- * Conta: perfil mockado + placeholder EXPLÍCITO de autenticação.
- * Quando o backend existir, este é o ponto de entrada do fluxo de login real.
+ * Conta: perfil mockado (com Pix em destaque) + placeholder EXPLÍCITO de
+ * autenticação. Quando o backend existir, este é o ponto de entrada do login.
  */
 import { useNavigate } from 'react-router-dom';
-import { KeyRound, LogOut, RotateCcw, ShieldAlert } from 'lucide-react';
+import { ChevronRight, KeyRound, LogOut, QrCode, RotateCcw, ShieldAlert } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Avatar from '../components/Avatar';
+import { PIX_TYPES } from './ProfilePage';
 
 export default function AccountPage() {
   const { currentUser, resetDemo } = useApp();
@@ -15,16 +16,43 @@ export default function AccountPage() {
     <div className="pt-4 md:pt-0">
       <h1 className="text-3xl font-extrabold tracking-tight">Conta</h1>
 
-      <section className="card-gradient p-6 mt-6 flex items-center gap-4">
+      <button
+        onClick={() => navigate(`/perfil/${currentUser.id}`)}
+        className="w-full card-gradient p-6 mt-6 flex items-center gap-4 text-left hover:brightness-110 transition"
+      >
         <Avatar user={currentUser} size="xl" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xl font-bold truncate">{currentUser?.name}</p>
           <p className="text-sm text-muted truncate">{currentUser?.email}</p>
           <span className="inline-block mt-2 px-2.5 py-1 rounded-full text-[11px] font-semibold text-positive bg-positive/15">
             Conta demo
           </span>
         </div>
-      </section>
+        <ChevronRight size={18} className="text-muted shrink-0" />
+      </button>
+
+      {/* Pix em destaque */}
+      <button
+        onClick={() => navigate(`/perfil/${currentUser.id}`)}
+        className="w-full card-flat p-5 mt-4 text-left hover:bg-white/5 transition"
+      >
+        <div className="flex items-center justify-between">
+          <p className="label-caps flex items-center gap-1.5">
+            <QrCode size={13} /> Sua chave Pix
+          </p>
+          {currentUser?.pix && (
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-accent/20 text-accent-bright uppercase tracking-wide">
+              {PIX_TYPES[currentUser.pix.type] ?? currentUser.pix.type}
+            </span>
+          )}
+        </div>
+        <p className="mt-2 font-bold break-all">
+          {currentUser?.pix?.key ?? (
+            <span className="text-muted font-normal">Nenhuma chave — toque para adicionar</span>
+          )}
+        </p>
+        <p className="mt-1 text-[11px] text-muted">Toque para editar perfil, foto e Pix</p>
+      </button>
 
       {/* ---------------------------------------------------------------- */}
       {/* PLACEHOLDER DE AUTENTICAÇÃO                                       */}

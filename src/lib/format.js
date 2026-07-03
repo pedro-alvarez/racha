@@ -60,3 +60,14 @@ export const initials = (name = '') =>
     .join('');
 
 export const firstName = (name = '') => name.split(' ')[0];
+
+/** Rótulo de agrupamento por dia: Hoje / Ontem / "12 jul". */
+export function dayLabel(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if (diff === 0) return 'Hoje';
+  if (diff === 1) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}

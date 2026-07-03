@@ -1,4 +1,4 @@
-/** Categorias de despesa com ícone (lucide) e rótulo pt-BR. */
+/** Categorias de despesa: ícone (lucide), rótulo pt-BR e cor própria. */
 import {
   Car,
   BedDouble,
@@ -11,13 +11,13 @@ import {
 } from 'lucide-react';
 
 export const CATEGORIES = {
-  transporte: { label: 'Transporte', Icon: Car },
-  hospedagem: { label: 'Hospedagem', Icon: BedDouble },
-  comida: { label: 'Comida', Icon: UtensilsCrossed },
-  lazer: { label: 'Lazer', Icon: PartyPopper },
-  bebidas: { label: 'Bebidas', Icon: Beer },
-  compras: { label: 'Compras', Icon: ShoppingBag },
-  outros: { label: 'Outros', Icon: Receipt },
+  transporte: { label: 'Transporte', Icon: Car, color: '#3B82F6' },
+  hospedagem: { label: 'Hospedagem', Icon: BedDouble, color: '#8B5CF6' },
+  comida: { label: 'Comida', Icon: UtensilsCrossed, color: '#F97316' },
+  lazer: { label: 'Lazer', Icon: PartyPopper, color: '#EC4899' },
+  bebidas: { label: 'Bebidas', Icon: Beer, color: '#EAB308' },
+  compras: { label: 'Compras', Icon: ShoppingBag, color: '#06B6D4' },
+  outros: { label: 'Outros', Icon: Receipt, color: '#9A93A8' },
 };
 
 export const PAYMENT_ICON = HandCoins;
