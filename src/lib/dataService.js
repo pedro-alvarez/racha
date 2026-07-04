@@ -22,6 +22,8 @@ const mapProfile = (row) =>
     email: row.email,
     color: row.color,
     photo: row.photo,
+    role: row.role ?? 'member',
+    approved: row.approved ?? false,
     pix: row.pix_key ? { type: row.pix_type, key: row.pix_key } : null,
   };
 
@@ -121,6 +123,8 @@ export async function getCurrentUser() {
       email: session.user.email,
       color: '#F0146B',
       photo: null,
+      role: 'member',
+      approved: false,
       pix: null,
     }
   );
@@ -165,9 +169,11 @@ export async function addFriend({ name, email }) {
     profile = data;
   }
   if (!profile) {
+    // perfil "convidado" (sem conta ainda): já nasce aprovado, pois não loga —
+    // serve só para dividir despesas até a pessoa criar a conta de verdade
     const { data, error } = await supabase
       .from('profiles')
-      .insert({ name, email, color })
+      .insert({ name, email, color, approved: true })
       .select()
       .single();
     if (error) fail(error);
@@ -289,6 +295,54 @@ export async function settleDebt(tripId, { from, to, amount, note }) {
     .single();
   if (error) fail(error);
   return mapPayment(data);
+}
+
+/* ---------------- Eventos abertos ---------------- */
+
+/** Entra num evento aberto (type = 'role'). */
+export async function joinTrip(tripId) {
+  const me = (await supabase.auth.getSession()).data.session?.user?.id;
+  const { error } = await supabase
+    .from('trip_members')
+    .upsert({ trip_id: tripId, user_id: me });
+  if (error) fail(error);
+}
+
+/* ---------------- Aprovação de cadastros (admin) ---------------- */
+
+export async function getPendingUsers() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('approved', false)
+    .order('created_at', { ascending: true });
+  if (error) fail(error);
+  return data.map(mapProfile);
+}
+
+export async function approveUser(userId) {
+  const { error } = await supabase.from('profiles').update({ approved: true }).eq('id', userId);
+  if (error) fail(error);
+}
+
+export async function rejectUser(userId) {
+  const { error } = await supabase.from('profiles').delete().eq('id', userId);
+  if (error) fail(error);
+}
+
+/* ---------------- Foto de perfil (Storage) ---------------- */
+
+/** Sobe a foto de perfil e devolve a URL pública. */
+export async function uploadAvatar(userId, file) {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const path = `${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from('avatars').upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+  });
+  if (error) fail(error);
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl;
 }
 
 /* ---------------- Perfil ---------------- */

@@ -1,14 +1,40 @@
 /**
- * Viagens & Rolês — separados em seções claras, com filtro por tipo
+ * Viagens & Eventos — separados em seções claras, com filtro por tipo
  * e saldo resumido em cada card.
  */
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { PartyPopper, Plus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { computeBalances } from '../lib/splitEngine';
 import { formatCentsAbs, formatDateRange, tripTypeLabel } from '../lib/format';
 import AvatarStack from '../components/AvatarStack';
+
+/** Evento aberto: qualquer pessoa aprovada pode entrar com um toque. */
+function OpenEventCard({ trip, onJoin, joining }) {
+  return (
+    <div className="card-flat p-5 w-full border-accent/25">
+      <div className="flex items-start justify-between">
+        <span className="text-3xl">{trip.emoji}</span>
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-accent/20 text-accent-bright">
+          Aberto
+        </span>
+      </div>
+      <h2 className="mt-3 text-xl font-bold">{trip.name}</h2>
+      <p className="text-xs text-muted mt-1">
+        {trip.members.length} {trip.members.length === 1 ? 'pessoa' : 'pessoas'} ·{' '}
+        {formatDateRange(trip.startDate, trip.endDate)}
+      </p>
+      <button
+        onClick={onJoin}
+        disabled={joining}
+        className="mt-4 w-full py-2.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+      >
+        <PartyPopper size={15} /> {joining ? 'Entrando…' : 'Entrar no evento'}
+      </button>
+    </div>
+  );
+}
 
 function TripCard({ trip, onOpen }) {
   const { expensesByTrip, paymentsByTrip, currentUser, userById } = useApp();
@@ -53,13 +79,24 @@ function TripCard({ trip, onOpen }) {
 }
 
 export default function TripsPage() {
-  const { trips, setSelectedTripId } = useApp();
+  const { trips, openEvents, joinTrip, setSelectedTripId } = useApp();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all'); // all | viagem | role
+  const [joining, setJoining] = useState(null);
 
   const open = (trip) => {
     setSelectedTripId(trip.id);
     navigate(`/viagem/${trip.id}`);
+  };
+
+  const handleJoin = async (trip) => {
+    setJoining(trip.id);
+    try {
+      await joinTrip(trip.id);
+      navigate(`/viagem/${trip.id}`);
+    } finally {
+      setJoining(null);
+    }
   };
 
   const viagens = trips.filter((t) => t.type !== 'role');
@@ -87,7 +124,7 @@ export default function TripsPage() {
   return (
     <div className="pt-4 md:pt-0">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight">Viagens & Rolês</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Viagens & Eventos</h1>
         <Link
           to="/viagens/nova"
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-br from-accent to-accent-bright text-sm font-semibold"
@@ -99,11 +136,25 @@ export default function TripsPage() {
       <div className="flex gap-2 mt-5">
         <button className={chip(filter === 'all')} onClick={() => setFilter('all')}>Tudo</button>
         <button className={chip(filter === 'viagem')} onClick={() => setFilter('viagem')}>✈️ Viagens</button>
-        <button className={chip(filter === 'role')} onClick={() => setFilter('role')}>🎉 Rolês</button>
+        <button className={chip(filter === 'role')} onClick={() => setFilter('role')}>🎉 Eventos</button>
       </div>
 
       {(filter === 'all' || filter === 'viagem') && renderSection('Viagens', viagens)}
-      {(filter === 'all' || filter === 'role') && renderSection('Rolês', roles)}
+      {(filter === 'all' || filter === 'role') && renderSection('Meus eventos', roles)}
+
+      {/* Eventos abertos: criados por outras pessoas, dá pra entrar com um toque */}
+      {(filter === 'all' || filter === 'role') && openEvents.length > 0 && (
+        <section className="mt-6">
+          <p className="label-caps">Eventos abertos ({openEvents.length})</p>
+          <ul className="mt-3 space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 stagger">
+            {openEvents.map((trip) => (
+              <li key={trip.id}>
+                <OpenEventCard trip={trip} onJoin={() => handleJoin(trip)} joining={joining === trip.id} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

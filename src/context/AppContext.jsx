@@ -12,6 +12,7 @@ export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [trips, setTrips] = useState([]);
+  const [openEvents, setOpenEvents] = useState([]);
   const [friends, setFriends] = useState([]);
   const [expensesByTrip, setExpensesByTrip] = useState({});
   const [paymentsByTrip, setPaymentsByTrip] = useState({});
@@ -26,6 +27,7 @@ export function AppProvider({ children }) {
       setCurrentUser(null);
       setUsers([]);
       setTrips([]);
+      setOpenEvents([]);
       setFriends([]);
       setExpensesByTrip({});
       setPaymentsByTrip({});
@@ -39,19 +41,25 @@ export function AppProvider({ children }) {
       dataService.getTrips(),
       dataService.getFriends(),
     ]);
+
+    // "minhas": sou membro. "eventos abertos": eventos visíveis que ainda não entrei.
+    const mine = allTrips.filter((t) => t.members.includes(user.id));
+    const open = allTrips.filter((t) => t.type === 'role' && !t.members.includes(user.id));
+
     const expensesEntries = await Promise.all(
-      allTrips.map(async (t) => [t.id, await dataService.getExpenses(t.id)])
+      mine.map(async (t) => [t.id, await dataService.getExpenses(t.id)])
     );
     const paymentsEntries = await Promise.all(
-      allTrips.map(async (t) => [t.id, await dataService.getPayments(t.id)])
+      mine.map(async (t) => [t.id, await dataService.getPayments(t.id)])
     );
     setCurrentUser(user);
     setUsers(allUsers);
-    setTrips(allTrips);
+    setTrips(mine);
+    setOpenEvents(open);
     setFriends(allFriends);
     setExpensesByTrip(Object.fromEntries(expensesEntries));
     setPaymentsByTrip(Object.fromEntries(paymentsEntries));
-    setSelectedTripId((prev) => prev ?? allTrips[0]?.id ?? null);
+    setSelectedTripId((prev) => prev ?? mine[0]?.id ?? null);
     setLoading(false);
   }, []);
 
@@ -112,6 +120,15 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
+  const joinTrip = useCallback(
+    async (tripId) => {
+      await dataService.joinTrip(tripId);
+      await refreshAll();
+      setSelectedTripId(tripId);
+    },
+    [refreshAll]
+  );
+
   const logout = useCallback(async () => {
     await dataService.logout();
     setSelectedTripId(null);
@@ -124,6 +141,7 @@ export function AppProvider({ children }) {
       users,
       userById,
       trips,
+      openEvents,
       friends,
       expensesByTrip,
       paymentsByTrip,
@@ -133,15 +151,18 @@ export function AppProvider({ children }) {
       addExpense,
       settleDebt,
       createTrip,
+      joinTrip,
       addFriend,
       updateUser,
       logout,
+      refreshAll,
     }),
     [
       currentUser,
       users,
       userById,
       trips,
+      openEvents,
       friends,
       expensesByTrip,
       paymentsByTrip,
@@ -150,9 +171,11 @@ export function AppProvider({ children }) {
       addExpense,
       settleDebt,
       createTrip,
+      joinTrip,
       addFriend,
       updateUser,
       logout,
+      refreshAll,
     ]
   );
 

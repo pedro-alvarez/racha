@@ -84,4 +84,4 @@ export function maskPix(pix) {
 }
 
 /** Rótulo do tipo de grupo. */
-export const tripTypeLabel = (type) => (type === 'role' ? 'Rolê' : 'Viagem');
+export const tripTypeLabel = (type) => (type === 'role' ? 'Evento' : 'Viagem');

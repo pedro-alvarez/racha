@@ -28,21 +28,22 @@ export default function NewTripPage() {
   };
 
   const handleAddFriend = async () => {
-    const value = newFriend.trim();
-    if (!value) return;
-    const isEmail = value.includes('@');
-    const friend = await addFriend({
-      name: isEmail ? value.split('@')[0] : value,
-      email: isEmail ? value : `${value.toLowerCase().replace(/\s+/g, '.')}@exemplo.com`,
-    });
+    const value = newFriend.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return setError('Digite um e-mail válido para adicionar.');
+    }
+    setError('');
+    const friend = await addFriend({ name: value.split('@')[0], email: value });
     setSelected((prev) => new Set(prev).add(friend.id));
     setNewFriend('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return setError('Dê um nome para a viagem.');
-    if (selected.size === 0) return setError('Adicione pelo menos um membro além de você.');
+    if (!name.trim()) return setError(type === 'role' ? 'Dê um nome para o evento.' : 'Dê um nome para a viagem.');
+    // eventos podem nascer só com o criador — as pessoas entram sozinhas depois
+    if (type !== 'role' && selected.size === 0)
+      return setError('Adicione pelo menos um membro além de você.');
     setSaving(true);
     const trip = await createTrip({
       name: name.trim(),
@@ -64,15 +65,15 @@ export default function NewTripPage() {
         <ArrowLeft size={16} /> Voltar
       </button>
       <h1 className="mt-3 text-3xl font-extrabold tracking-tight">
-        {type === 'role' ? 'Novo rolê' : 'Nova viagem'}
+        {type === 'role' ? 'Novo evento' : 'Nova viagem'}
       </h1>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         {/* Tipo: viagem (vários dias) ou rolê (um dia) */}
         <div className="grid grid-cols-2 gap-2">
           {[
-            { id: 'viagem', label: '✈️ Viagem', desc: 'vários dias' },
-            { id: 'role', label: '🎉 Rolê', desc: 'um dia só' },
+            { id: 'viagem', label: '✈️ Viagem', desc: 'privada, vários dias' },
+            { id: 'role', label: '🎉 Evento', desc: 'aberto, a galera entra' },
           ].map((opt) => (
             <button
               key={opt.id}
@@ -159,8 +160,9 @@ export default function NewTripPage() {
           </ul>
           <div className="flex gap-2 mt-3">
             <input
+              type="email"
               className={inputCls}
-              placeholder="Adicionar por nome ou e-mail…"
+              placeholder="Adicionar por e-mail…"
               value={newFriend}
               onChange={(e) => setNewFriend(e.target.value)}
             />
@@ -182,7 +184,7 @@ export default function NewTripPage() {
           disabled={saving}
           className="w-full py-3.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold disabled:opacity-50"
         >
-          {saving ? 'Criando…' : 'Criar viagem'}
+          {saving ? 'Criando…' : type === 'role' ? 'Criar evento' : 'Criar viagem'}
         </button>
       </form>
     </div>

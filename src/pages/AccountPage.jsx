@@ -2,9 +2,11 @@
  * Minha Conta — como na referência: avatar central com lápis, plano,
  * seções GERAL e PAGAMENTOS, mais o placeholder explícito de autenticação.
  */
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
+  Check,
   ChevronRight,
   CreditCard,
   KeyRound,
@@ -12,8 +14,11 @@ import {
   LogOut,
   Pencil,
   Settings,
+  UserCheck,
   UserRound,
+  X,
 } from 'lucide-react';
+import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
 import { useFriendBalances } from '../hooks/useFriendBalances';
 import { maskPix } from '../lib/format';
@@ -37,9 +42,30 @@ function Row({ Icon, label, value, dot, onClick }) {
 }
 
 export default function AccountPage() {
-  const { currentUser, logout } = useApp();
+  const { currentUser, logout, refreshAll } = useApp();
   const balances = useFriendBalances();
   const navigate = useNavigate();
+
+  const isAdmin = currentUser?.role === 'admin';
+  const [pending, setPending] = useState([]);
+  const [acting, setActing] = useState(null);
+
+  // fila de aprovações (só para o admin)
+  useEffect(() => {
+    if (isAdmin) dataService.getPendingUsers().then(setPending).catch(() => setPending([]));
+  }, [isAdmin]);
+
+  const handleApproval = async (userId, approve) => {
+    setActing(userId);
+    try {
+      if (approve) await dataService.approveUser(userId);
+      else await dataService.rejectUser(userId);
+      setPending((prev) => prev.filter((p) => p.id !== userId));
+      await refreshAll();
+    } finally {
+      setActing(null);
+    }
+  };
 
   const hasPendingDebts = Object.values(balances).some((v) => v !== 0);
   const goProfile = () => navigate(`/perfil/${currentUser.id}`);
@@ -67,10 +93,50 @@ export default function AccountPage() {
         </button>
         <p className="mt-3.5 text-xl font-extrabold">{currentUser?.name}</p>
         <p className="text-sm text-muted">{currentUser?.email}</p>
-        <span className="mt-2.5 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold tracking-widest uppercase bg-gradient-to-br from-accent to-accent-bright">
-          {currentUser?.role === 'admin' ? 'Admin · Plano Pro' : 'Plano Pro'}
-        </span>
+        {isAdmin && (
+          <span className="mt-2.5 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold tracking-widest uppercase bg-gradient-to-br from-accent to-accent-bright">
+            Admin
+          </span>
+        )}
       </div>
+
+      {/* Aprovações pendentes (admin) */}
+      {isAdmin && pending.length > 0 && (
+        <section className="mt-8">
+          <p className="label-caps flex items-center gap-1.5">
+            <UserCheck size={13} /> Aprovações pendentes ({pending.length})
+          </p>
+          <ul className="mt-3 space-y-2.5">
+            {pending.map((p) => (
+              <li key={p.id} className="card-flat p-4 flex items-center gap-3 border-accent/30">
+                <Avatar user={p} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{p.name}</p>
+                  <p className="text-[11px] text-muted truncate">{p.email}</p>
+                </div>
+                <button
+                  onClick={() => handleApproval(p.id, true)}
+                  disabled={acting === p.id}
+                  className="w-9 h-9 rounded-full bg-positive/15 text-positive flex items-center justify-center hover:bg-positive/25 transition disabled:opacity-50"
+                  aria-label={`Aprovar ${p.name}`}
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Recusar o cadastro de ${p.name}?`)) handleApproval(p.id, false);
+                  }}
+                  disabled={acting === p.id}
+                  className="w-9 h-9 rounded-full bg-accent/15 text-accent-bright flex items-center justify-center hover:bg-accent/25 transition disabled:opacity-50"
+                  aria-label={`Recusar ${p.name}`}
+                >
+                  <X size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* GERAL */}
       <p className="label-caps mt-8">Geral</p>

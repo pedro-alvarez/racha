@@ -2,9 +2,10 @@
  * Perfil de uma pessoa: avatar, dados, chave Pix em destaque (copiável)
  * e saldo entre vocês. Modo edição: nome, foto (URL), cor do avatar e Pix.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Copy, Lock, Pencil, QrCode } from 'lucide-react';
+import { ArrowLeft, Camera, Check, Copy, Lock, Pencil, QrCode, Trash2 } from 'lucide-react';
+import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
 import { useFriendBalances } from '../hooks/useFriendBalances';
 import { formatCentsAbs } from '../lib/format';
@@ -35,6 +36,27 @@ export default function ProfilePage() {
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({ name: '', photo: '', color: '', pixType: 'email', pixKey: '' });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handlePhotoFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite escolher o mesmo arquivo de novo
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return setUploadError('Escolha um arquivo de imagem.');
+    if (file.size > 5 * 1024 * 1024) return setUploadError('Imagem muito grande (máx. 5 MB).');
+    setUploadError('');
+    setUploading(true);
+    try {
+      const url = await dataService.uploadAvatar(userId, file);
+      setForm((f) => ({ ...f, photo: url }));
+    } catch (err) {
+      setUploadError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     setForm({
@@ -171,13 +193,37 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label className="label-caps">Foto (URL da imagem)</label>
+            <label className="label-caps">Foto de perfil</label>
             <input
-              className={`${inputCls} mt-2`}
-              placeholder="https://…/minha-foto.jpg (vazio = iniciais)"
-              value={form.photo}
-              onChange={(e) => setForm({ ...form, photo: e.target.value })}
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoFile}
             />
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex-1 py-3 rounded-2xl bg-white/5 border border-white/10 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-white/10 transition disabled:opacity-50"
+              >
+                <Camera size={16} />
+                {uploading ? 'Enviando…' : form.photo ? 'Trocar foto' : 'Escolher foto'}
+              </button>
+              {form.photo && (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, photo: '' })}
+                  className="px-4 rounded-2xl bg-white/5 border border-white/10 text-muted hover:text-accent-bright transition"
+                  aria-label="Remover foto"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
+            {uploadError && <p className="mt-2 text-xs text-accent-bright">{uploadError}</p>}
+            <p className="mt-2 text-[11px] text-muted">Sem foto, o avatar mostra suas iniciais.</p>
           </div>
 
           <div>

@@ -4,9 +4,38 @@
  * Desktop (>= md): sidebar fixa à esquerda + conteúdo em área central.
  */
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ListTodo, CircleUserRound, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, ListTodo, CircleUserRound, Wallet, Hourglass, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Avatar from './Avatar';
+
+/** Tela de espera: conta criada mas ainda não aprovada pelo admin. */
+function PendingApproval() {
+  const { currentUser, logout } = useApp();
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="w-full max-w-sm text-center">
+        <span className="mx-auto w-16 h-16 rounded-3xl bg-accent/15 text-accent-bright flex items-center justify-center">
+          <Hourglass size={28} />
+        </span>
+        <h1 className="mt-5 text-2xl font-extrabold">Quase lá, {currentUser?.name?.split(' ')[0]}!</h1>
+        <p className="mt-2 text-sm text-muted">
+          Sua conta foi criada e está aguardando a aprovação do administrador.
+          Assim que for liberada, é só entrar de novo.
+        </p>
+        <button
+          onClick={async () => {
+            await logout();
+            navigate('/login');
+          }}
+          className="mt-8 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-sm font-semibold text-muted-light hover:text-white transition"
+        >
+          <LogOut size={16} /> Sair
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const NAV_ITEMS = [
   { to: '/', label: 'Visão Geral', Icon: LayoutDashboard, end: true },
@@ -36,6 +65,9 @@ export default function Layout() {
 
   // Gate de autenticação: sem sessão, só a tela de login é acessível
   if (!currentUser) return <Navigate to="/login" replace />;
+
+  // Gate de aprovação: conta nova espera o OK do admin
+  if (!currentUser.approved && currentUser.role !== 'admin') return <PendingApproval />;
 
   return (
     <div className="min-h-screen md:flex">

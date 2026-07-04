@@ -1,95 +1,82 @@
 /**
- * Amigos — como na referência: card "Convidar amigos" (link/QR),
+ * Amigos — convite por e-mail (único caminho de entrada) e
  * seção "SEUS AMIGOS (n)" com saldo entre vocês em cada linha.
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, QrCode, UserPlus, UserRoundPlus } from 'lucide-react';
+import { Check, Mail, Send } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useFriendBalances } from '../hooks/useFriendBalances';
-import { formatCentsAbs } from '../lib/format';
+import { formatCentsAbs, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function FriendsPage() {
   const { friends, addFriend } = useApp();
   const balances = useFriendBalances();
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+  const [added, setAdded] = useState(null); // nome do último amigo adicionado
 
-  const handleAdd = async (e) => {
+  const handleInvite = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    await addFriend({
-      name: name.trim(),
-      email: email.trim() || `${name.trim().toLowerCase().replace(/\s+/g, '.')}@exemplo.com`,
-    });
-    setName('');
-    setEmail('');
-    setShowForm(false);
-  };
-
-  const handleInvite = async () => {
-    // TODO backend: gerar link de convite real por usuário
+    const value = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(value)) return setError('Digite um e-mail válido.');
+    setError('');
+    setSending(true);
     try {
-      await navigator.clipboard.writeText('https://pedro-alvarez.github.io/racha/#/convite/demo');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      /* clipboard indisponível */
+      const friend = await addFriend({ name: value.split('@')[0], email: value });
+      setAdded(firstName(friend.name));
+      setEmail('');
+      setTimeout(() => setAdded(null), 2500);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSending(false);
     }
   };
 
-  const inputCls =
-    'w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm placeholder:text-muted focus:outline-none focus:border-accent/60';
-
   return (
     <div className="pt-4 md:pt-0">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight">Amigos</h1>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
-            showForm ? 'bg-accent text-white' : 'bg-white/5 text-muted-light hover:text-white'
-          }`}
-          aria-label="Adicionar amigo"
-        >
-          <UserRoundPlus size={18} />
-        </button>
-      </div>
+      <h1 className="text-3xl font-extrabold tracking-tight">Amigos</h1>
 
-      {/* Convite */}
-      <button
-        onClick={handleInvite}
-        className="w-full card-gradient p-4 mt-5 flex items-center gap-3.5 text-left hover:brightness-110 transition"
-      >
-        <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accent-bright flex items-center justify-center shrink-0 shadow-fab">
-          {copied ? <Check size={20} /> : <QrCode size={20} />}
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold">{copied ? 'Link copiado!' : 'Convidar amigos'}</p>
-          <p className="text-xs text-muted mt-0.5">
-            {copied ? 'Manda no grupo 😉' : 'Compartilhe o link ou QR code'}
-          </p>
+      {/* Convite por e-mail */}
+      <section className="card-gradient p-5 mt-5">
+        <div className="flex items-center gap-3.5">
+          <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accent-bright flex items-center justify-center shrink-0 shadow-fab">
+            {added ? <Check size={20} /> : <Mail size={20} />}
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold">{added ? `${added} está na sua lista!` : 'Convidar por e-mail'}</p>
+            <p className="text-xs text-muted mt-0.5">
+              {added
+                ? 'Já dá pra dividir despesas com essa pessoa 😉'
+                : 'A pessoa entra na sua lista e pode criar a conta depois'}
+            </p>
+          </div>
         </div>
-        <ChevronRight size={17} className="text-muted shrink-0" />
-      </button>
-
-      {showForm && (
-        <form onSubmit={handleAdd} className="card-flat p-5 mt-4 space-y-3 border-accent/30">
-          <p className="label-caps">Adicionar manualmente</p>
-          <input className={inputCls} placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-          <input className={inputCls} placeholder="E-mail (opcional)" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <form onSubmit={handleInvite} className="mt-4 flex gap-2">
+          <input
+            type="email"
+            className="flex-1 min-w-0 bg-ink/40 border border-white/10 rounded-2xl px-4 py-3 text-sm placeholder:text-muted focus:outline-none focus:border-accent/60"
+            placeholder="email@doamigo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
           <button
             type="submit"
-            className="w-full py-3 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold flex items-center justify-center gap-2"
+            disabled={sending}
+            className="px-4 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold shrink-0 flex items-center justify-center disabled:opacity-50"
+            aria-label="Convidar"
           >
-            <UserPlus size={17} /> Adicionar
+            <Send size={17} />
           </button>
         </form>
-      )}
+        {error && <p className="mt-2.5 text-xs text-accent-bright">{error}</p>}
+      </section>
 
       <p className="label-caps mt-7">Seus amigos ({friends.length})</p>
       <ul className="mt-3 space-y-2.5 stagger">
