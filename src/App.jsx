@@ -5,9 +5,11 @@
  * tiver backend próprio/hosting com rewrites, dá para trocar por
  * createBrowserRouter sem mexer nas páginas.
  */
+import { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Layout from './components/Layout';
+import SplashScreen from './components/SplashScreen';
 import LoginPage from './pages/LoginPage';
 import OverviewPage from './pages/OverviewPage';
 import TripsPage from './pages/TripsPage';
@@ -21,8 +23,12 @@ import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
+  // Splash só na carga inicial; o app já renderiza por trás e é "revelado".
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <AppProvider>
+      {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       <HashRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
