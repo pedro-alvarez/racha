@@ -3,7 +3,7 @@
  * Mobile (< md): conteúdo em coluna + barra de navegação inferior fixa.
  * Desktop (>= md): sidebar fixa à esquerda + conteúdo em área central.
  */
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, ListTodo, CircleUserRound, Wallet } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Avatar from './Avatar';
@@ -33,6 +33,9 @@ export default function Layout() {
       </div>
     );
   }
+
+  // Gate de autenticação: sem sessão, só a tela de login é acessível
+  if (!currentUser) return <Navigate to="/login" replace />;
 
   return (
     <div className="min-h-screen md:flex">

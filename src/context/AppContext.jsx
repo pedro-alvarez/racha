@@ -19,8 +19,22 @@ export function AppProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const refreshAll = useCallback(async () => {
-    const [user, allUsers, allTrips, allFriends] = await Promise.all([
-      dataService.getCurrentUser(),
+    const user = await dataService.getCurrentUser();
+
+    // Sem sessão: limpa tudo (o Layout redireciona para /login)
+    if (!user) {
+      setCurrentUser(null);
+      setUsers([]);
+      setTrips([]);
+      setFriends([]);
+      setExpensesByTrip({});
+      setPaymentsByTrip({});
+      setSelectedTripId(null);
+      setLoading(false);
+      return;
+    }
+
+    const [allUsers, allTrips, allFriends] = await Promise.all([
       dataService.getUsers(),
       dataService.getTrips(),
       dataService.getFriends(),
@@ -43,6 +57,9 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     refreshAll();
+    // login/logout (em qualquer aba) recarrega os dados
+    const unsubscribe = dataService.onAuthChange(() => setTimeout(refreshAll, 0));
+    return unsubscribe;
   }, [refreshAll]);
 
   const userById = useCallback(
@@ -95,8 +112,8 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
-  const resetDemo = useCallback(async () => {
-    await dataService.resetDemoData();
+  const logout = useCallback(async () => {
+    await dataService.logout();
     setSelectedTripId(null);
     await refreshAll();
   }, [refreshAll]);
@@ -118,7 +135,7 @@ export function AppProvider({ children }) {
       createTrip,
       addFriend,
       updateUser,
-      resetDemo,
+      logout,
     }),
     [
       currentUser,
@@ -135,7 +152,7 @@ export function AppProvider({ children }) {
       createTrip,
       addFriend,
       updateUser,
-      resetDemo,
+      logout,
     ]
   );
 

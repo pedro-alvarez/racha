@@ -11,9 +11,7 @@ import {
   Landmark,
   LogOut,
   Pencil,
-  RotateCcw,
   Settings,
-  ShieldAlert,
   UserRound,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -39,7 +37,7 @@ function Row({ Icon, label, value, dot, onClick }) {
 }
 
 export default function AccountPage() {
-  const { currentUser, resetDemo } = useApp();
+  const { currentUser, logout } = useApp();
   const balances = useFriendBalances();
   const navigate = useNavigate();
 
@@ -94,46 +92,16 @@ export default function AccountPage() {
         <Row Icon={Landmark} label="Chave PIX" value={maskPix(currentUser?.pix) ?? 'adicionar'} onClick={goProfile} />
       </div>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* PLACEHOLDER DE AUTENTICAÇÃO — quando o backend existir:           */}
-      {/* 1. dataService.login() chama POST /auth/login                     */}
-      {/* 2. o token fica no dataService (nunca nos componentes)            */}
-      {/* 3. LoginPage vira o gate real de entrada                          */}
-      {/* ---------------------------------------------------------------- */}
-      <section className="card-flat p-5 mt-7 border-dashed border-accent/40">
-        <div className="flex items-start gap-3">
-          <span className="w-10 h-10 rounded-2xl bg-accent/15 text-accent-bright flex items-center justify-center shrink-0">
-            <ShieldAlert size={18} />
-          </span>
-          <div>
-            <p className="font-bold">Autenticação real em breve</p>
-            <p className="text-sm text-muted mt-1">
-              Você está logado como usuário de demonstração. Este bloco marca onde entrará o
-              login com backend (e-mail/senha, Google etc.).
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <div className="mt-4 space-y-2.5">
+      <div className="mt-7 space-y-2.5">
         <button
           onClick={async () => {
-            if (confirm('Restaurar os dados de demonstração? Tudo que você criou será apagado.')) {
-              await resetDemo();
-              navigate('/');
-            }
+            await logout();
+            navigate('/login');
           }}
           className="w-full card-flat p-4 flex items-center gap-3 text-left hover:bg-white/5 transition"
         >
-          <RotateCcw size={18} className="text-muted" />
-          <span className="text-sm font-semibold">Restaurar dados de demonstração</span>
-        </button>
-        <button
-          onClick={() => navigate('/login')}
-          className="w-full card-flat p-4 flex items-center gap-3 text-left hover:bg-white/5 transition"
-        >
           <LogOut size={18} className="text-accent-bright" />
-          <span className="text-sm font-semibold text-accent-bright">Sair (simulado)</span>
+          <span className="text-sm font-semibold text-accent-bright">Sair</span>
         </button>
       </div>
     </div>
