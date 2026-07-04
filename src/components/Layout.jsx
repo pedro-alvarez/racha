@@ -5,7 +5,6 @@
  */
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, ListTodo, CircleUserRound, Wallet } from 'lucide-react';
-import StatusBar from './StatusBar';
 import { useApp } from '../context/AppContext';
 import Avatar from './Avatar';
 
@@ -69,8 +68,7 @@ export default function Layout() {
 
       {/* Conteúdo */}
       <div className="flex-1 min-w-0">
-        <StatusBar />
-        <main className="max-w-lg md:max-w-3xl mx-auto px-5 md:px-10 pb-28 md:pb-12 md:pt-8">
+        <main className="max-w-lg md:max-w-3xl mx-auto px-5 md:px-10 pt-4 pb-28 md:pb-12 md:pt-8">
           {/* key na rota faz cada tela entrar com animação */}
           <div key={location.pathname} className="page-enter">
             <Outlet />

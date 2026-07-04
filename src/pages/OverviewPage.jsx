@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, PlusCircle } from 'lucide-react';
+import { ChevronRight, PlusCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import TripHeader from '../components/TripHeader';
@@ -21,6 +21,7 @@ export default function OverviewPage() {
   const navigate = useNavigate();
   const [direction, setDirection] = useState(0); // -1 esquerda, 1 direita
   const touchStart = useRef(null);
+  const activeChipRef = useRef(null);
 
   useEffect(() => {
     if (routeTripId && routeTripId !== selectedTripId) setSelectedTripId(routeTripId);
@@ -28,6 +29,11 @@ export default function OverviewPage() {
 
   const tripId = routeTripId ?? selectedTripId;
   const { trip, simplified, pairwise, activity, myBalance } = useTripSummary(tripId);
+
+  // mantém o chip da viagem ativa visível na faixa rolável
+  useEffect(() => {
+    activeChipRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [trip?.id]);
 
   if (!trip) {
     return (
@@ -79,27 +85,23 @@ export default function OverviewPage() {
           <TripHeader trip={trip} />
           <BalanceCard tripId={trip.id} balance={myBalance} />
         </div>
-
-        {/* setas (desktop e telas maiores) */}
-        {trips.length > 1 && (
-          <>
-            <button
-              onClick={() => goTo(index - 1, -1)}
-              aria-label="Viagem anterior"
-              className="hidden sm:flex absolute -left-4 md:-left-6 top-1/2 w-9 h-9 rounded-full bg-white/5 border border-white/10 items-center justify-center text-muted-light hover:text-white hover:bg-white/10 transition"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => goTo(index + 1, 1)}
-              aria-label="Próxima viagem"
-              className="hidden sm:flex absolute -right-4 md:-right-6 top-1/2 w-9 h-9 rounded-full bg-white/5 border border-white/10 items-center justify-center text-muted-light hover:text-white hover:bg-white/10 transition"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </>
-        )}
       </div>
+
+      {/* indicador de páginas: bolinhas animadas (a ativa vira um traço rosa) */}
+      {trips.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-4">
+          {trips.map((t, i) => (
+            <button
+              key={t.id}
+              onClick={() => goTo(i, i > index ? 1 : -1)}
+              aria-label={`Ir para ${t.name}`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i === index ? 'w-7 bg-accent' : 'w-1.5 bg-white/15 hover:bg-white/35'
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
       {/* seletor de viagens: chips com nome (substitui as bolinhas) */}
       {trips.length > 1 && (
@@ -107,6 +109,7 @@ export default function OverviewPage() {
           {trips.map((t, i) => (
             <button
               key={t.id}
+              ref={t.id === trip.id ? activeChipRef : null}
               onClick={() => goTo(i, i > index ? 1 : -1)}
               className={`px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition shrink-0 ${
                 t.id === trip.id
