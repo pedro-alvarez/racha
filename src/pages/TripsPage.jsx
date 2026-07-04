@@ -1,5 +1,5 @@
 /**
- * Viagens & Eventos — separados em seções claras, com filtro por tipo
+ * Viagens & Rolês — separados em seções claras, com filtro por tipo
  * e saldo resumido em cada card.
  */
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { computeBalances } from '../lib/splitEngine';
 import { formatCentsAbs, formatDateRange, tripTypeLabel } from '../lib/format';
 import AvatarStack from '../components/AvatarStack';
 
-/** Evento aberto: qualquer pessoa aprovada pode entrar com um toque. */
+/** Rolê aberto: qualquer pessoa aprovada entra com um toque — vale como "eu vou!". */
 function OpenEventCard({ trip, onJoin, joining }) {
   return (
     <div className="card-flat p-5 w-full border-accent/25">
@@ -22,15 +22,17 @@ function OpenEventCard({ trip, onJoin, joining }) {
       </div>
       <h2 className="mt-3 text-xl font-bold">{trip.name}</h2>
       <p className="text-xs text-muted mt-1">
-        {trip.members.length} {trip.members.length === 1 ? 'pessoa' : 'pessoas'} ·{' '}
+        {trip.members.length} {trip.members.length === 1 ? 'confirmado' : 'confirmados'} ·{' '}
         {formatDateRange(trip.startDate, trip.endDate)}
+        {trip.startTime && ` · ${trip.startTime}`}
       </p>
+      {trip.description && <p className="text-xs text-muted-light mt-2 line-clamp-2">{trip.description}</p>}
       <button
         onClick={onJoin}
         disabled={joining}
         className="mt-4 w-full py-2.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
       >
-        <PartyPopper size={15} /> {joining ? 'Entrando…' : 'Entrar no evento'}
+        <PartyPopper size={15} /> {joining ? 'Confirmando…' : 'Eu vou! Entrar no rolê'}
       </button>
     </div>
   );
@@ -124,7 +126,7 @@ export default function TripsPage() {
   return (
     <div className="pt-4 md:pt-0">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight">Viagens & Eventos</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Viagens & Rolês</h1>
         <Link
           to="/viagens/nova"
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-br from-accent to-accent-bright text-sm font-semibold"
@@ -136,16 +138,16 @@ export default function TripsPage() {
       <div className="flex gap-2 mt-5">
         <button className={chip(filter === 'all')} onClick={() => setFilter('all')}>Tudo</button>
         <button className={chip(filter === 'viagem')} onClick={() => setFilter('viagem')}>✈️ Viagens</button>
-        <button className={chip(filter === 'role')} onClick={() => setFilter('role')}>🎉 Eventos</button>
+        <button className={chip(filter === 'role')} onClick={() => setFilter('role')}>🎉 Rolês</button>
       </div>
 
       {(filter === 'all' || filter === 'viagem') && renderSection('Viagens', viagens)}
-      {(filter === 'all' || filter === 'role') && renderSection('Meus eventos', roles)}
+      {(filter === 'all' || filter === 'role') && renderSection('Meus rolês', roles)}
 
-      {/* Eventos abertos: criados por outras pessoas, dá pra entrar com um toque */}
+      {/* Rolês abertos: criados por outras pessoas — entrar = confirmar presença */}
       {(filter === 'all' || filter === 'role') && openEvents.length > 0 && (
         <section className="mt-6">
-          <p className="label-caps">Eventos abertos ({openEvents.length})</p>
+          <p className="label-caps">Rolês abertos ({openEvents.length})</p>
           <ul className="mt-3 space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 stagger">
             {openEvents.map((trip) => (
               <li key={trip.id}>

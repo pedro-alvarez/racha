@@ -1,25 +1,38 @@
 /**
- * Amigos — convite por e-mail (único caminho de entrada) e
- * seção "SEUS AMIGOS (n)" com saldo entre vocês em cada linha.
+ * Amigos — convite por e-mail de verdade:
+ * a pessoa recebe um e-mail com link mágico, cria a conta por ele e cai na
+ * fila de aprovação do admin; a amizade se forma sozinha ao aceitar.
+ * Convites pendentes ficam numa seção expansível, com opção de revogar.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Mail, Send } from 'lucide-react';
+import { Check, ChevronDown, Clock, Mail, Send, X } from 'lucide-react';
+import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
 import { useFriendBalances } from '../hooks/useFriendBalances';
-import { formatCentsAbs, firstName } from '../lib/format';
+import { formatCentsAbs, formatRelative, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function FriendsPage() {
-  const { friends, addFriend } = useApp();
+  const { friends, refreshAll } = useApp();
   const balances = useFriendBalances();
   const navigate = useNavigate();
+
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
-  const [added, setAdded] = useState(null); // nome do último amigo adicionado
+  const [feedback, setFeedback] = useState(null); // { text, sub }
+
+  const [invites, setInvites] = useState([]);
+  const [showInvites, setShowInvites] = useState(false);
+  const [revoking, setRevoking] = useState(null);
+
+  const loadInvites = () => dataService.getInvites().then(setInvites).catch(() => setInvites([]));
+  useEffect(() => {
+    loadInvites();
+  }, []);
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -28,14 +41,38 @@ export default function FriendsPage() {
     setError('');
     setSending(true);
     try {
-      const friend = await addFriend({ name: value.split('@')[0], email: value });
-      setAdded(firstName(friend.name));
+      const result = await dataService.inviteFriend(value);
+      if (result.status === 'friend') {
+        setFeedback({
+          text: `${firstName(result.profile.name)} já usa o Racha!`,
+          sub: 'Adicionamos direto na sua lista de amigos 😉',
+        });
+        await refreshAll();
+      } else {
+        setFeedback({
+          text: 'Convite enviado!',
+          sub: `${value} vai receber um e-mail com o link pra criar a conta.`,
+        });
+        await loadInvites();
+        setShowInvites(true);
+      }
       setEmail('');
-      setTimeout(() => setAdded(null), 2500);
+      setTimeout(() => setFeedback(null), 4000);
     } catch (err) {
       setError(err.message);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleRevoke = async (invite) => {
+    if (!confirm(`Revogar o convite de ${invite.email}?`)) return;
+    setRevoking(invite.id);
+    try {
+      await dataService.revokeInvite(invite.id);
+      setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+    } finally {
+      setRevoking(null);
     }
   };
 
@@ -47,14 +84,12 @@ export default function FriendsPage() {
       <section className="card-gradient p-5 mt-5">
         <div className="flex items-center gap-3.5">
           <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-accent-bright flex items-center justify-center shrink-0 shadow-fab">
-            {added ? <Check size={20} /> : <Mail size={20} />}
+            {feedback ? <Check size={20} /> : <Mail size={20} />}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="font-bold">{added ? `${added} está na sua lista!` : 'Convidar por e-mail'}</p>
+            <p className="font-bold">{feedback ? feedback.text : 'Convidar por e-mail'}</p>
             <p className="text-xs text-muted mt-0.5">
-              {added
-                ? 'Já dá pra dividir despesas com essa pessoa 😉'
-                : 'A pessoa entra na sua lista e pode criar a conta depois'}
+              {feedback ? feedback.sub : 'A pessoa recebe um link pra criar a conta no Racha'}
             </p>
           </div>
         </div>
@@ -77,6 +112,52 @@ export default function FriendsPage() {
         </form>
         {error && <p className="mt-2.5 text-xs text-accent-bright">{error}</p>}
       </section>
+
+      {/* Convites pendentes (expansível) */}
+      {invites.length > 0 && (
+        <section className="card-flat mt-4 overflow-hidden">
+          <button
+            onClick={() => setShowInvites((v) => !v)}
+            className="w-full p-4 flex items-center gap-3 text-left hover:bg-white/5 transition"
+          >
+            <span className="w-10 h-10 rounded-2xl bg-amber-400/10 text-amber-300 flex items-center justify-center shrink-0">
+              <Clock size={17} />
+            </span>
+            <span className="flex-1 font-semibold text-sm">
+              Convites pendentes
+              <span className="ml-2 px-2 py-0.5 rounded-full text-[11px] font-bold bg-accent/20 text-accent-bright">
+                {invites.length}
+              </span>
+            </span>
+            <ChevronDown
+              size={17}
+              className={`text-muted transition-transform duration-300 ${showInvites ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {showInvites && (
+            <ul className="px-4 pb-4 space-y-2 stagger">
+              {invites.map((inv) => (
+                <li
+                  key={inv.id}
+                  className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl px-4 py-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{inv.email}</p>
+                    <p className="text-[11px] text-muted">enviado {formatRelative(inv.createdAt)}</p>
+                  </div>
+                  <button
+                    onClick={() => handleRevoke(inv)}
+                    disabled={revoking === inv.id}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-accent/10 text-accent-bright hover:bg-accent/20 transition disabled:opacity-50"
+                  >
+                    <X size={13} /> Revogar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <p className="label-caps mt-7">Seus amigos ({friends.length})</p>
       <ul className="mt-3 space-y-2.5 stagger">
@@ -115,6 +196,11 @@ export default function FriendsPage() {
             </li>
           );
         })}
+        {friends.length === 0 && (
+          <li className="card-flat p-5 text-sm text-muted text-center">
+            Ninguém por aqui ainda — convide alguém pelo e-mail aí em cima 👆
+          </li>
+        )}
       </ul>
     </div>
   );

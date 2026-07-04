@@ -4,17 +4,17 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, HandCoins, Sparkles, Users, Wallet } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { TimelineItem } from '../components/ActivityList';
 import { dayLabel } from '../lib/format';
 
 const TYPE_FILTERS = [
-  { id: 'all', label: 'Tudo' },
-  { id: 'participated', label: 'Participei' },
-  { id: 'paid', label: 'Eu paguei' },
-  { id: 'owe', label: 'Dívidas' },
-  { id: 'settlements', label: 'Acertos' },
+  { id: 'all', label: 'Tudo', Icon: Sparkles },
+  { id: 'participated', label: 'Participei', Icon: Users },
+  { id: 'paid', label: 'Paguei', Icon: Wallet },
+  { id: 'owe', label: 'Dívidas', Icon: HandCoins },
+  { id: 'settlements', label: 'Acertos', Icon: ArrowLeftRight },
 ];
 
 export default function ActivityPage() {
@@ -58,10 +58,7 @@ export default function ActivityPage() {
     return byDay;
   }, [trips, expensesByTrip, paymentsByTrip, tripFilter, typeFilter, currentUser]);
 
-  const chip = (active) =>
-    `px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition shrink-0 ${
-      active ? 'bg-accent text-white shadow-fab' : 'bg-white/5 text-muted-light border border-white/10'
-    }`;
+  const typeIndex = TYPE_FILTERS.findIndex((f) => f.id === typeFilter);
 
   return (
     <div className="pt-4 md:pt-0">
@@ -76,45 +73,89 @@ export default function ActivityPage() {
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Histórico de Atividades</h1>
       </div>
 
-      {/* filtro por tipo */}
-      <div className="flex gap-2 mt-5 overflow-x-auto pb-1 -mx-5 px-5 md:mx-0 md:px-0">
-        {TYPE_FILTERS.map((f) => (
-          <button key={f.id} className={chip(typeFilter === f.id)} onClick={() => setTypeFilter(f.id)}>
-            {f.label}
+      {/* filtro por tipo: controle segmentado com pílula deslizante */}
+      <div className="relative mt-5 p-1 rounded-2xl bg-white/5 border border-white/10 grid grid-cols-5">
+        <span
+          aria-hidden="true"
+          className="absolute top-1 bottom-1 rounded-xl bg-gradient-to-br from-accent to-accent-bright shadow-fab transition-[left] duration-300 ease-out"
+          style={{
+            width: 'calc((100% - 8px) / 5)',
+            left: `calc(4px + ${typeIndex} * (100% - 8px) / 5)`,
+          }}
+        />
+        {TYPE_FILTERS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            onClick={() => setTypeFilter(id)}
+            className={`relative z-10 flex flex-col items-center gap-1 py-2 rounded-xl transition-colors duration-300 ${
+              typeFilter === id ? 'text-white' : 'text-muted hover:text-white'
+            }`}
+          >
+            <Icon size={15} />
+            <span className="text-[10px] font-bold">{label}</span>
           </button>
         ))}
       </div>
 
-      {/* filtro por viagem/rolê */}
-      <div className="flex gap-2 mt-2.5 overflow-x-auto pb-1 -mx-5 px-5 md:mx-0 md:px-0">
-        <button className={chip(tripFilter === 'all')} onClick={() => setTripFilter('all')}>
-          Todos os grupos
+      {/* filtro por viagem/rolê: chips que expandem ao selecionar */}
+      <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-5 px-5 md:mx-0 md:px-0">
+        <button
+          onClick={() => setTripFilter('all')}
+          className={`px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 shrink-0 ${
+            tripFilter === 'all'
+              ? 'bg-accent text-white shadow-fab'
+              : 'bg-white/5 text-muted-light border border-white/10 hover:text-white'
+          }`}
+        >
+          Todos
         </button>
-        {trips.map((t) => (
-          <button key={t.id} className={chip(tripFilter === t.id)} onClick={() => setTripFilter(t.id)}>
-            {t.emoji} {t.name}
-          </button>
-        ))}
+        {trips.map((t) => {
+          const active = tripFilter === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTripFilter(active ? 'all' : t.id)}
+              title={t.name}
+              className={`flex items-center px-3 py-2 rounded-full text-xs font-bold transition-all duration-300 shrink-0 ${
+                active
+                  ? 'bg-accent text-white shadow-fab'
+                  : 'bg-white/5 text-muted-light border border-white/10 hover:text-white'
+              }`}
+            >
+              <span className="text-sm leading-none">{t.emoji}</span>
+              <span
+                className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+                  active ? 'max-w-[180px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'
+                }`}
+              >
+                {t.name}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {groups.length === 0 ? (
-        <div className="card-flat p-5 mt-5 text-sm text-muted text-center">
-          Nada encontrado com esses filtros.
-        </div>
-      ) : (
-        groups.map((group) => (
-          <section key={group.label} className="mt-5">
-            <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest text-accent-bright bg-accent/10 border border-accent/20">
-              {group.label}
-            </span>
-            <ul className="mt-3 stagger">
-              {group.items.map((item, i) => (
-                <TimelineItem key={item.id} item={item} isLast={i === group.items.length - 1} />
-              ))}
-            </ul>
-          </section>
-        ))
-      )}
+      {/* key nos filtros faz a lista reanimar a cada mudança */}
+      <div key={`${typeFilter}-${tripFilter}`}>
+        {groups.length === 0 ? (
+          <div className="card-flat p-5 mt-5 text-sm text-muted text-center page-enter">
+            Nada encontrado com esses filtros.
+          </div>
+        ) : (
+          groups.map((group) => (
+            <section key={group.label} className="mt-5">
+              <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest text-accent-bright bg-accent/10 border border-accent/20">
+                {group.label}
+              </span>
+              <ul className="mt-3 stagger">
+                {group.items.map((item, i) => (
+                  <TimelineItem key={item.id} item={item} isLast={i === group.items.length - 1} />
+                ))}
+              </ul>
+            </section>
+          ))
+        )}
+      </div>
     </div>
   );
 }

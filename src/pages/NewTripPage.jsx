@@ -1,14 +1,14 @@
-/** Criar nova viagem: nome, emoji, datas e membros (dos amigos ou por e-mail). */
+/** Criar nova viagem/rolê: nome, emoji, datas, hora e descrição opcionais, membros. */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, UserPlus } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Avatar from '../components/Avatar';
 
 const EMOJIS = ['✈️', '🏖️', '🏔️', '🍖', '🎉', '🏕️', '🚗', '🛳️'];
 
 export default function NewTripPage() {
-  const { friends, currentUser, createTrip, addFriend } = useApp();
+  const { friends, currentUser, createTrip } = useApp();
   const navigate = useNavigate();
 
   const [type, setType] = useState('viagem'); // viagem | role
@@ -16,8 +16,9 @@ export default function NewTripPage() {
   const [emoji, setEmoji] = useState('✈️');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [description, setDescription] = useState('');
   const [selected, setSelected] = useState(new Set());
-  const [newFriend, setNewFriend] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -27,21 +28,10 @@ export default function NewTripPage() {
     setSelected(next);
   };
 
-  const handleAddFriend = async () => {
-    const value = newFriend.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      return setError('Digite um e-mail válido para adicionar.');
-    }
-    setError('');
-    const friend = await addFriend({ name: value.split('@')[0], email: value });
-    setSelected((prev) => new Set(prev).add(friend.id));
-    setNewFriend('');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return setError(type === 'role' ? 'Dê um nome para o evento.' : 'Dê um nome para a viagem.');
-    // eventos podem nascer só com o criador — as pessoas entram sozinhas depois
+    if (!name.trim()) return setError(type === 'role' ? 'Dê um nome para o rolê.' : 'Dê um nome para a viagem.');
+    // rolês podem nascer só com o criador — as pessoas entram sozinhas depois
     if (type !== 'role' && selected.size === 0)
       return setError('Adicione pelo menos um membro além de você.');
     setSaving(true);
@@ -49,8 +39,10 @@ export default function NewTripPage() {
       name: name.trim(),
       emoji,
       type,
+      description,
       startDate,
       endDate: type === 'role' ? startDate : endDate,
+      startTime: type === 'role' ? startTime : '',
       members: [currentUser.id, ...selected],
     });
     navigate(`/viagem/${trip.id}`);
@@ -65,7 +57,7 @@ export default function NewTripPage() {
         <ArrowLeft size={16} /> Voltar
       </button>
       <h1 className="mt-3 text-3xl font-extrabold tracking-tight">
-        {type === 'role' ? 'Novo evento' : 'Nova viagem'}
+        {type === 'role' ? 'Novo rolê' : 'Nova viagem'}
       </h1>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
@@ -73,7 +65,7 @@ export default function NewTripPage() {
         <div className="grid grid-cols-2 gap-2">
           {[
             { id: 'viagem', label: '✈️ Viagem', desc: 'privada, vários dias' },
-            { id: 'role', label: '🎉 Evento', desc: 'aberto, a galera entra' },
+            { id: 'role', label: '🎉 Rolê', desc: 'aberto, a galera entra' },
           ].map((opt) => (
             <button
               key={opt.id}
@@ -118,16 +110,32 @@ export default function NewTripPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className={type === 'role' ? 'col-span-2' : ''}>
+          <div>
             <label className="label-caps">{type === 'role' ? 'Data' : 'Início'}</label>
             <input type="date" className={`${inputCls} mt-2`} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
-          {type !== 'role' && (
+          {type === 'role' ? (
+            <div>
+              <label className="label-caps">Hora (opcional)</label>
+              <input type="time" className={`${inputCls} mt-2`} value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            </div>
+          ) : (
             <div>
               <label className="label-caps">Fim</label>
               <input type="date" className={`${inputCls} mt-2`} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
           )}
+        </div>
+
+        <div>
+          <label className="label-caps">Descrição (opcional)</label>
+          <textarea
+            className={`${inputCls} mt-2 resize-none`}
+            rows={3}
+            placeholder={type === 'role' ? 'Ex.: Churras na casa do Thiago, leva o que for beber 🍻' : 'Ex.: Casa na praia, levar protetor e boné'}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
         </div>
 
         <div>
@@ -158,23 +166,10 @@ export default function NewTripPage() {
               </li>
             ))}
           </ul>
-          <div className="flex gap-2 mt-3">
-            <input
-              type="email"
-              className={inputCls}
-              placeholder="Adicionar por e-mail…"
-              value={newFriend}
-              onChange={(e) => setNewFriend(e.target.value)}
-            />
-            <button
-              type="button"
-              onClick={handleAddFriend}
-              className="px-4 rounded-2xl bg-white/10 hover:bg-white/15 transition shrink-0"
-              aria-label="Adicionar amigo"
-            >
-              <UserPlus size={18} />
-            </button>
-          </div>
+          <p className="mt-2.5 text-[11px] text-muted">
+            Não achou alguém? Convide pela aba <span className="font-semibold text-muted-light">Amigos</span> — a
+            pessoa entra na lista assim que aceitar.
+          </p>
         </div>
 
         {error && <p className="text-sm text-accent-bright">{error}</p>}
@@ -184,7 +179,7 @@ export default function NewTripPage() {
           disabled={saving}
           className="w-full py-3.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold disabled:opacity-50"
         >
-          {saving ? 'Criando…' : type === 'role' ? 'Criar evento' : 'Criar viagem'}
+          {saving ? 'Criando…' : type === 'role' ? 'Criar rolê' : 'Criar viagem'}
         </button>
       </form>
     </div>

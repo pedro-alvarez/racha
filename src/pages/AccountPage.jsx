@@ -8,7 +8,6 @@ import {
   Bell,
   Check,
   ChevronRight,
-  CreditCard,
   KeyRound,
   Landmark,
   LogOut,
@@ -21,7 +20,6 @@ import {
 import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
 import { useFriendBalances } from '../hooks/useFriendBalances';
-import { maskPix } from '../lib/format';
 import Avatar from '../components/Avatar';
 
 function Row({ Icon, label, value, dot, onClick }) {
@@ -148,14 +146,24 @@ export default function AccountPage() {
           dot={hasPendingDebts}
           onClick={() => navigate('/notificacoes')}
         />
-        <Row Icon={KeyRound} label="Segurança" onClick={() => navigate('/login')} />
+        <Row Icon={KeyRound} label="Segurança" onClick={() => navigate('/seguranca')} />
       </div>
 
       {/* PAGAMENTOS */}
       <p className="label-caps mt-7">Pagamentos</p>
       <div className="mt-3 space-y-2.5">
-        <Row Icon={CreditCard} label="Métodos de Pagamento" value="em breve" onClick={goProfile} />
-        <Row Icon={Landmark} label="Chave PIX" value={maskPix(currentUser?.pix) ?? 'adicionar'} onClick={goProfile} />
+        <Row
+          Icon={Landmark}
+          label="Chave PIX"
+          value={
+            currentUser?.pix?.key
+              ? currentUser.pix.key.length > 22
+                ? `${currentUser.pix.key.slice(0, 22)}…`
+                : currentUser.pix.key
+              : 'adicionar'
+          }
+          onClick={goProfile}
+        />
       </div>
 
       <div className="mt-7 space-y-2.5">

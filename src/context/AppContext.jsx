@@ -103,11 +103,11 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
-  const addFriend = useCallback(
-    async (friend) => {
-      const created = await dataService.addFriend(friend);
+  const deleteTrip = useCallback(
+    async (tripId) => {
+      await dataService.deleteTrip(tripId);
+      setSelectedTripId(null);
       await refreshAll();
-      return created;
     },
     [refreshAll]
   );
@@ -152,7 +152,7 @@ export function AppProvider({ children }) {
       settleDebt,
       createTrip,
       joinTrip,
-      addFriend,
+      deleteTrip,
       updateUser,
       logout,
       refreshAll,
@@ -172,7 +172,7 @@ export function AppProvider({ children }) {
       settleDebt,
       createTrip,
       joinTrip,
-      addFriend,
+      deleteTrip,
       updateUser,
       logout,
       refreshAll,

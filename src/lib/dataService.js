@@ -32,8 +32,11 @@ const mapTrip = (row) => ({
   name: row.name,
   emoji: row.emoji,
   type: row.type,
+  description: row.description ?? '',
   startDate: row.start_date,
   endDate: row.end_date,
+  startTime: row.start_time ?? '',
+  createdBy: row.created_by,
   members: (row.trip_members ?? []).map((m) => m.user_id),
   createdAt: row.created_at,
 });
@@ -157,34 +160,66 @@ export async function getFriends() {
   return data.map((row) => mapProfile(row.friend)).filter(Boolean);
 }
 
-export async function addFriend({ name, email }) {
+/**
+ * Convida alguém por e-mail:
+ * - se a pessoa JÁ tem conta no Racha → vira amizade na hora;
+ * - se não tem → registra o convite e o Supabase envia um e-mail com link
+ *   mágico; ao clicar, a conta é criada, a amizade se forma sozinha (trigger
+ *   no banco) e ela cai na fila de aprovação do admin.
+ * Retorna { status: 'friend' | 'invited', profile? }.
+ */
+export async function inviteFriend(email) {
   const me = (await supabase.auth.getSession()).data.session?.user?.id;
-  const colors = ['#F0146B', '#8B5CF6', '#06B6D4', '#F59E0B', '#22C55E', '#3B82F6', '#EC4899'];
-  const color = colors[Math.floor(Math.random() * colors.length)];
 
-  // Reaproveita perfil existente com o mesmo e-mail (ex.: alguém já cadastrado)
-  let profile = null;
-  if (email) {
-    const { data } = await supabase.from('profiles').select('*').eq('email', email).maybeSingle();
-    profile = data;
-  }
-  if (!profile) {
-    // perfil "convidado" (sem conta ainda): já nasce aprovado, pois não loga —
-    // serve só para dividir despesas até a pessoa criar a conta de verdade
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert({ name, email, color, approved: true })
-      .select()
-      .single();
+  // já é usuário? amizade direta.
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email', email)
+    .maybeSingle();
+  if (existing) {
+    if (existing.id === me) throw new Error('Esse é o seu próprio e-mail 😅');
+    const { error } = await supabase.from('friends').upsert({ user_id: me, friend_id: existing.id });
     if (error) fail(error);
-    profile = data;
+    return { status: 'friend', profile: mapProfile(existing) };
   }
 
-  const { error: linkError } = await supabase
-    .from('friends')
-    .upsert({ user_id: me, friend_id: profile.id });
-  if (linkError) fail(linkError);
-  return mapProfile(profile);
+  // registra o convite (revogável na tela de Amigos)
+  const { error: inviteError } = await supabase
+    .from('invites')
+    .upsert({ email, invited_by: me }, { onConflict: 'email,invited_by' });
+  if (inviteError) fail(inviteError);
+
+  // dispara o e-mail com link mágico que cria a conta
+  const { error: otpError } = await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: true },
+  });
+  if (otpError) fail(otpError);
+
+  return { status: 'invited' };
+}
+
+/** Convites pendentes que eu enviei (ainda não aceitos). */
+export async function getInvites() {
+  const { data, error } = await supabase
+    .from('invites')
+    .select('*')
+    .is('accepted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) fail(error);
+  return data.map((row) => ({
+    id: row.id,
+    email: row.email,
+    invitedBy: row.invited_by,
+    createdAt: row.created_at,
+  }));
+}
+
+/** Revoga um convite pendente. */
+export async function revokeInvite(inviteId) {
+  const { error } = await supabase.from('invites').delete().eq('id', inviteId);
+  if (error) fail(error);
 }
 
 /* ---------------- Viagens ---------------- */
@@ -208,7 +243,7 @@ export async function getTrip(tripId) {
   return data ? mapTrip(data) : null;
 }
 
-export async function createTrip({ name, emoji, type, startDate, endDate, members }) {
+export async function createTrip({ name, emoji, type, startDate, endDate, startTime, description, members }) {
   const me = (await supabase.auth.getSession()).data.session?.user?.id;
   const { data: trip, error } = await supabase
     .from('trips')
@@ -216,8 +251,10 @@ export async function createTrip({ name, emoji, type, startDate, endDate, member
       name,
       emoji: emoji || '✈️',
       type: type || 'viagem',
+      description: description?.trim() || null,
       start_date: startDate || null,
       end_date: endDate || null,
+      start_time: startTime || null,
       created_by: me,
     })
     .select()
@@ -297,9 +334,21 @@ export async function settleDebt(tripId, { from, to, amount, note }) {
   return mapPayment(data);
 }
 
-/* ---------------- Eventos abertos ---------------- */
+/** Apaga uma viagem/rolê (RLS: só o admin consegue). */
+export async function deleteTrip(tripId) {
+  const { error } = await supabase.from('trips').delete().eq('id', tripId);
+  if (error) fail(error);
+}
 
-/** Entra num evento aberto (type = 'role'). */
+/** Troca a senha do usuário logado. */
+export async function changePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) fail(error);
+}
+
+/* ---------------- Rolês abertos ---------------- */
+
+/** Entra num rolê aberto (type = 'role') — vale como confirmação de presença. */
 export async function joinTrip(tripId) {
   const me = (await supabase.auth.getSession()).data.session?.user?.id;
   const { error } = await supabase

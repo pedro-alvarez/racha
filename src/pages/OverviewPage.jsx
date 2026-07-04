@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, PlusCircle } from 'lucide-react';
+import { ChevronRight, PartyPopper, PlusCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import TripHeader from '../components/TripHeader';
@@ -17,7 +17,7 @@ import Fab from '../components/Fab';
 
 export default function OverviewPage() {
   const { tripId: routeTripId } = useParams();
-  const { trips, selectedTripId, setSelectedTripId } = useApp();
+  const { trips, openEvents, selectedTripId, setSelectedTripId } = useApp();
   const navigate = useNavigate();
   const [direction, setDirection] = useState(0); // -1 esquerda, 1 direita
   const touchStart = useRef(null);
@@ -128,6 +128,27 @@ export default function OverviewPage() {
           Todas as viagens <ChevronRight size={14} />
         </Link>
       </div>
+
+      {/* Rolês abertos esperando confirmação */}
+      {openEvents.length > 0 && (
+        <Link
+          to="/viagens"
+          className="card-flat p-4 mt-4 flex items-center gap-3.5 border-accent/25 hover:bg-white/5 transition"
+        >
+          <span className="w-11 h-11 rounded-2xl bg-accent/15 text-accent-bright flex items-center justify-center shrink-0">
+            <PartyPopper size={19} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">
+              {openEvents.length === 1
+                ? `Rolê aberto: ${openEvents[0].emoji} ${openEvents[0].name}`
+                : `${openEvents.length} rolês abertos te esperando`}
+            </p>
+            <p className="text-xs text-muted mt-0.5">Toque pra ver e confirmar presença</p>
+          </div>
+          <ChevronRight size={16} className="text-muted shrink-0" />
+        </Link>
+      )}
 
       <SettlementPlan simplified={simplified} pairwise={pairwise} />
 
