@@ -80,6 +80,8 @@ function friendlyError(error) {
   if (msg.includes('Password should be at least'))
     return 'A senha precisa ter pelo menos 6 caracteres.';
   if (msg.includes('valid email')) return 'Digite um e-mail válido.';
+  if (msg.includes('violates foreign key'))
+    return 'Não dá pra remover: essa pessoa tem registros no app (despesas, viagens ou acertos).';
   return msg;
 }
 
@@ -377,6 +379,11 @@ export async function approveUser(userId) {
 export async function rejectUser(userId) {
   const { error } = await supabase.from('profiles').delete().eq('id', userId);
   if (error) fail(error);
+}
+
+/** Remove alguém do app (admin). Mesmo efeito de recusar: apaga o perfil. */
+export async function removeUser(userId) {
+  return rejectUser(userId);
 }
 
 /* ---------------- Foto de perfil (Storage) ---------------- */

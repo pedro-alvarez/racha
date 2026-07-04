@@ -20,6 +20,7 @@ import FriendsPage from './pages/FriendsPage';
 import ActivityPage from './pages/ActivityPage';
 import AccountPage from './pages/AccountPage';
 import SecurityPage from './pages/SecurityPage';
+import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/atividade" element={<ActivityPage />} />
             <Route path="/conta" element={<AccountPage />} />
             <Route path="/seguranca" element={<SecurityPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="/perfil/:userId" element={<ProfilePage />} />
             <Route path="/notificacoes" element={<NotificationsPage />} />
           </Route>
