@@ -83,6 +83,9 @@ function friendlyError(error) {
   if (msg.includes('valid email')) return 'Digite um e-mail válido.';
   if (msg.includes('violates foreign key'))
     return 'Não dá pra remover: essa pessoa tem registros no app (despesas, viagens ou acertos).';
+  if (msg.includes('rate limit')) return 'Limite de e-mails atingido — tente de novo em ~1 hora.';
+  if (msg === '{}' || msg.trim() === '' || msg.includes('Error sending'))
+    return 'Não foi possível enviar o e-mail agora. Verifique a configuração de SMTP no Supabase.';
   return msg;
 }
 
