@@ -1,5 +1,5 @@
 /**
- * App — roteamento.
+ * App - roteamento.
  * HashRouter é usado de propósito: em GitHub Pages não há rewrite de rotas
  * no servidor, então /viagem/x daria 404 com BrowserRouter. Quando o app
  * tiver backend próprio/hosting com rewrites, dá para trocar por

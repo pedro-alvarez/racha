@@ -1,5 +1,5 @@
 /**
- * supabaseClient — conexão única com o Supabase.
+ * supabaseClient - conexão única com o Supabase.
  * A chave "publishable" é pública por design (segura de expor no front-end);
  * a proteção real vem das políticas de Row Level Security no banco.
  */

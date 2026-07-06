@@ -1,5 +1,5 @@
 /**
- * Acerto Final — visão dinâmica do plano simplificado:
+ * Acerto Final - visão dinâmica do plano simplificado:
  * card de total pendente, transações avatar → avatar e "marcar pago"
  * (com a chave Pix do credor a um toque, via perfil).
  */
@@ -37,7 +37,7 @@ export default function SettlePage() {
       const pix = to.pix ? ` (Pix: ${to.pix.key})` : '';
       return `• ${firstName(from.name)} paga ${formatCentsAbs(t.amount)} para ${firstName(to.name)}${pix}`;
     });
-    const text = `Acerto — ${trip.name}\n${lines.join('\n')}`;
+    const text = `Acerto de ${trip.name}\n${lines.join('\n')}`;
     try {
       if (navigator.share) await navigator.share({ text });
       else {

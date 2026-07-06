@@ -1,5 +1,5 @@
 /**
- * Notificações — derivadas dos dados: dívidas pendentes suas e a receber,
+ * Notificações - derivadas dos dados: dívidas pendentes suas e a receber,
  * por viagem/rolê. (Com backend real, viram push/eventos de verdade.)
  */
 import { useNavigate } from 'react-router-dom';

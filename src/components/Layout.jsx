@@ -1,5 +1,5 @@
 /**
- * Layout — casca do app.
+ * Layout - casca do app.
  * Mobile (< md): conteúdo em coluna + barra de navegação inferior fixa.
  * Desktop (>= md): sidebar fixa à esquerda + conteúdo em área central.
  */

@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
  * Botão de ação flutuante rosa.
  * Renderizado via portal direto no <body>: ancestrais com animação de
  * transform (ex.: .page-enter) criam um "containing block" e quebram o
- * position: fixed — com o portal, o botão fica sempre preso na tela.
+ * position: fixed - com o portal, o botão fica sempre preso na tela.
  */
 export default function Fab({ onClick, label = 'Adicionar despesa' }) {
   return createPortal(

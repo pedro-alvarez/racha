@@ -1,5 +1,5 @@
 /**
- * Viagens & Rolês — separados em seções claras, com filtro por tipo
+ * Viagens & Rolês - separados em seções claras, com filtro por tipo
  * e saldo resumido em cada card.
  */
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { computeBalances } from '../lib/splitEngine';
 import { formatCentsAbs, formatDateRange, tripTypeLabel } from '../lib/format';
 import AvatarStack from '../components/AvatarStack';
 
-/** Rolê aberto: qualquer pessoa aprovada entra com um toque — vale como "eu vou!". */
+/** Rolê aberto: qualquer pessoa aprovada entra com um toque - vale como "eu vou!". */
 function OpenEventCard({ trip, onJoin, joining }) {
   return (
     <div className="card-flat p-5 w-full border-accent/25">
@@ -144,7 +144,7 @@ export default function TripsPage() {
       {(filter === 'all' || filter === 'viagem') && renderSection('Viagens', viagens)}
       {(filter === 'all' || filter === 'role') && renderSection('Meus rolês', roles)}
 
-      {/* Rolês abertos: criados por outras pessoas — entrar = confirmar presença */}
+      {/* Rolês abertos: criados por outras pessoas - entrar = confirmar presença */}
       {(filter === 'all' || filter === 'role') && openEvents.length > 0 && (
         <section className="mt-6">
           <p className="label-caps">Rolês abertos ({openEvents.length})</p>

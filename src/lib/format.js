@@ -26,7 +26,7 @@ export function formatDateFull(iso) {
 export function formatDateRange(start, end) {
   if (!start) return '';
   if (!end || start === end) return formatDateFull(start);
-  return `${formatDate(start)} – ${formatDate(end)} de ${end.slice(0, 4)}`;
+  return `${formatDate(start)} a ${formatDate(end)} de ${end.slice(0, 4)}`;
 }
 
 export function formatRelative(iso) {
@@ -85,3 +85,44 @@ export function maskPix(pix) {
 
 /** Rótulo do tipo de grupo. */
 export const tripTypeLabel = (type) => (type === 'role' ? 'Rolê' : 'Viagem');
+
+/** Máscara de digitação para chave Pix conforme o tipo. */
+export function formatPixKey(type, value) {
+  if (type === 'cpf') {
+    const d = value.replace(/\D/g, '').slice(0, 11);
+    return d
+      .replace(/^(\d{3})(\d)/, '$1.$2')
+      .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d{1,2}).*/, '$1.$2.$3-$4');
+  }
+  if (type === 'celular') {
+    const d = value.replace(/\D/g, '').slice(0, 11);
+    if (d.length === 0) return '';
+    if (d.length <= 2) return `(${d}`;
+    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+  if (type === 'email') return value.trim().toLowerCase();
+  return value; // aleatória: livre
+}
+
+/** Valida a chave Pix; retorna mensagem de erro ou null se ok. */
+export function validatePixKey(type, key) {
+  if (!key) return null; // vazio = sem chave, permitido
+  const digits = key.replace(/\D/g, '');
+  if (type === 'cpf' && digits.length !== 11) return 'CPF incompleto: são 11 dígitos.';
+  if (type === 'celular' && digits.length < 10) return 'Celular incompleto: inclua o DDD.';
+  if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key)) return 'E-mail inválido.';
+  if (type === 'aleatoria' && key.trim().length < 8) return 'Chave aleatória muito curta.';
+  return null;
+}
+
+/** Placeholder do campo de chave Pix conforme o tipo. */
+export const pixPlaceholder = (type) =>
+  ({
+    cpf: '000.000.000-00',
+    celular: '(11) 98888-7766',
+    email: 'voce@email.com',
+    aleatoria: 'cole a chave gerada pelo banco',
+  })[type] ?? 'Sua chave';

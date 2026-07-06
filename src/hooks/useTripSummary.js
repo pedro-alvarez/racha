@@ -1,5 +1,5 @@
 /**
- * useTripSummary — junta despesas + pagamentos de uma viagem e devolve
+ * useTripSummary - junta despesas + pagamentos de uma viagem e devolve
  * tudo que a UI precisa: saldos, plano de acerto (simplificado ou não)
  * e atividade em ordem cronológica.
  */

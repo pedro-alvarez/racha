@@ -1,5 +1,5 @@
 /**
- * AppContext — estado global do app (Context API).
+ * AppContext - estado global do app (Context API).
  * Toda mutação passa pelo dataService; os componentes nunca tocam em
  * localStorage nem sabem de onde os dados vêm.
  */

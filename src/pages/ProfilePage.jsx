@@ -8,7 +8,16 @@ import { ArrowLeft, Camera, Check, Copy, Lock, Pencil, QrCode, Trash2 } from 'lu
 import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
 import { useFriendBalances } from '../hooks/useFriendBalances';
-import { formatCentsAbs, formatCents, formatDateFull, formatTime, firstName } from '../lib/format';
+import {
+  formatCentsAbs,
+  formatCents,
+  formatDateFull,
+  formatTime,
+  firstName,
+  formatPixKey,
+  validatePixKey,
+  pixPlaceholder,
+} from '../lib/format';
 import Avatar from '../components/Avatar';
 
 export const PIX_TYPES = {
@@ -31,13 +40,14 @@ export default function ProfilePage() {
   const user = userById(userId);
   const isMe = userId === currentUser?.id;
   const isAdmin = currentUser?.role === 'admin';
-  const canEdit = isMe || isAdmin; // só você mesmo — ou o admin — edita um perfil
+  const canEdit = isMe || isAdmin; // só você mesmo - ou o admin - edita um perfil
   const net = balances[userId] ?? 0;
 
   const [editing, setEditing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({ name: '', photo: '', color: '', pixType: 'email', pixKey: '' });
   const [saving, setSaving] = useState(false);
+  const [pixError, setPixError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
@@ -134,6 +144,8 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
+    const invalid = validatePixKey(form.pixType, form.pixKey.trim());
+    if (invalid) return setPixError(invalid);
     setSaving(true);
     await updateUser(userId, {
       name: form.name.trim() || user.name,
@@ -332,7 +344,9 @@ export default function ProfilePage() {
               <select
                 className="bg-white/5 border border-white/10 rounded-2xl px-3 py-3 text-sm focus:outline-none focus:border-accent/60 shrink-0 [&>option]:bg-ink"
                 value={form.pixType}
-                onChange={(e) => setForm({ ...form, pixType: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, pixType: e.target.value, pixKey: formatPixKey(e.target.value, form.pixKey) })
+                }
               >
                 {Object.entries(PIX_TYPES).map(([k, label]) => (
                   <option key={k} value={k}>{label}</option>
@@ -340,11 +354,16 @@ export default function ProfilePage() {
               </select>
               <input
                 className={inputCls}
-                placeholder="Sua chave"
+                placeholder={pixPlaceholder(form.pixType)}
+                inputMode={form.pixType === 'cpf' || form.pixType === 'celular' ? 'numeric' : 'text'}
                 value={form.pixKey}
-                onChange={(e) => setForm({ ...form, pixKey: e.target.value })}
+                onChange={(e) => {
+                  setPixError('');
+                  setForm({ ...form, pixKey: formatPixKey(form.pixType, e.target.value) });
+                }}
               />
             </div>
+            {pixError && <p className="mt-2 text-xs text-accent-bright">{pixError}</p>}
           </div>
 
           <button

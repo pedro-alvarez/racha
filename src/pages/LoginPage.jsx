@@ -1,5 +1,5 @@
 /**
- * LoginPage — autenticação real (Supabase, e-mail/senha).
+ * LoginPage - autenticação real (Supabase, e-mail/senha).
  * Alterna entre "Entrar" e "Criar conta". Se a confirmação por e-mail
  * estiver ativa no Supabase, orienta o usuário a conferir a caixa de entrada.
  */

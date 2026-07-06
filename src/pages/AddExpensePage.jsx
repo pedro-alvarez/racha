@@ -91,7 +91,7 @@ export default function AddExpensePage() {
 
     const { valid, error: validationError } = validateExpense(expense);
     if (!valid) {
-      // mensagens do engine vêm em centavos — formata para exibir
+      // mensagens do engine vêm em centavos - formata para exibir
       return setError(validationError.replace(/\((\d+)\)/g, (_, c) => `(${formatCents(+c)})`));
     }
 

@@ -31,7 +31,7 @@ export default function NewTripPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return setError(type === 'role' ? 'Dê um nome para o rolê.' : 'Dê um nome para a viagem.');
-    // rolês podem nascer só com o criador — as pessoas entram sozinhas depois
+    // rolês podem nascer só com o criador - as pessoas entram sozinhas depois
     setSaving(true);
     const trip = await createTrip({
       name: name.trim(),
@@ -165,7 +165,7 @@ export default function NewTripPage() {
             ))}
           </ul>
           <p className="mt-2.5 text-[11px] text-muted">
-            Não achou alguém? Convide pela aba <span className="font-semibold text-muted-light">Amigos</span> — a
+            Não achou alguém? Convide pela aba <span className="font-semibold text-muted-light">Amigos</span>: a
             pessoa entra na lista assim que aceitar.
           </p>
         </div>

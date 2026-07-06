@@ -1,10 +1,10 @@
 /**
- * SplashScreen — animação de abertura do app.
+ * SplashScreen - animação de abertura do app.
  *
  * Linha do tempo:
  *  0.00s  ícone (quadrado rosa com carteira + "R.") dá um "pop" no centro
  *  0.80s  o "R." sai de dentro da carteira e vira o início do wordmark;
- *         as letras "acha." entram em cascata ao lado — o ícone vira a logo completa
+ *         as letras "acha." entram em cascata ao lado - o ícone vira a logo completa
  *  2.00s  a logo inteira expande (zoom) e o overlay some, revelando o app
  *
  * O componente se auto-remove chamando onDone() ao final.
@@ -71,7 +71,7 @@ export default function SplashScreen({ onDone }) {
           </svg>
         </div>
 
-        {/* wordmark "Racha." — expande a partir do ícone */}
+        {/* wordmark "Racha." - expande a partir do ícone */}
         <div className="splash-word flex text-5xl font-extrabold tracking-tight text-white">
           {LETTERS.map((letter, i) => (
             <span key={i} className="splash-letter" style={{ animationDelay: `${0.9 + i * 0.06}s` }}>

@@ -1,5 +1,5 @@
 /**
- * ExpenseModalContext — abre o modal de detalhes de uma despesa a partir
+ * ExpenseModalContext - abre o modal de detalhes de uma despesa a partir
  * de qualquer tela: const { openExpense } = useExpenseModal().
  */
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';

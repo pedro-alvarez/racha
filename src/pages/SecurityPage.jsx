@@ -1,5 +1,5 @@
 /**
- * Segurança — troca de senha da conta logada (Supabase Auth).
+ * Segurança - troca de senha da conta logada (Supabase Auth).
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';

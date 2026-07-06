@@ -1,5 +1,5 @@
 /**
- * Painel do administrador — só o admin acessa.
+ * Painel do administrador - só o admin acessa.
  * - Aprovações pendentes (aprovar / recusar cadastros)
  * - Membros do app (com remoção)
  * - Todos os convites enviados (de qualquer pessoa), revogáveis

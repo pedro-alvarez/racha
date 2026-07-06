@@ -1,5 +1,5 @@
 /**
- * Amigos — convite por e-mail de verdade:
+ * Amigos - convite por e-mail de verdade:
  * a pessoa recebe um e-mail com link mágico, cria a conta por ele e cai na
  * fila de aprovação do admin; a amizade se forma sozinha ao aceitar.
  * Convites pendentes ficam numa seção expansível, com opção de revogar.
@@ -198,7 +198,7 @@ export default function FriendsPage() {
         })}
         {friends.length === 0 && (
           <li className="card-flat p-5 text-sm text-muted text-center">
-            Ninguém por aqui ainda — convide alguém pelo e-mail aí em cima 👆
+            Ninguém por aqui ainda. Convide alguém pelo e-mail aí em cima 👆
           </li>
         )}
       </ul>

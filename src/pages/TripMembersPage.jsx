@@ -1,5 +1,5 @@
 /**
- * Membros da viagem/rolê — ver quem está dentro e (criador ou admin)
+ * Membros da viagem/rolê - ver quem está dentro e (criador ou admin)
  * adicionar gente depois da criação.
  */
 import { useState } from 'react';

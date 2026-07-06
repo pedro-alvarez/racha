@@ -1,5 +1,5 @@
 /**
- * Visão Geral — carrossel de viagens com gestos:
+ * Visão Geral - carrossel de viagens com gestos:
  * - swipe (arrastar pro lado) no celular e no mouse
  * - setas laterais no desktop
  * - chips com nome das viagens (em vez de bolinhas minúsculas)

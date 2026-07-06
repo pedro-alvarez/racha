@@ -1,5 +1,5 @@
 /**
- * Minha Conta — como na referência: avatar central com lápis, plano,
+ * Minha Conta - como na referência: avatar central com lápis, plano,
  * seções GERAL e PAGAMENTOS, mais o placeholder explícito de autenticação.
  */
 import { useEffect, useState } from 'react';

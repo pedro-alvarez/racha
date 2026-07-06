@@ -161,7 +161,7 @@ export default function ExpenseModal({ expense, onClose }) {
           </li>
           {historyError && (
             <li className="text-accent-bright/70">
-              Histórico indisponível — rode o supabase/upgrade-v4.sql no banco.
+              Histórico indisponível. Rode o supabase/upgrade-v4.sql no banco.
             </li>
           )}
         </ul>

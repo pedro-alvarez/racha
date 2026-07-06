@@ -1,13 +1,13 @@
 /**
- * dataService.js — camada de acesso a dados (ÚNICO ponto de I/O do app).
+ * dataService.js - camada de acesso a dados (ÚNICO ponto de I/O do app).
  *
  * Agora conectado ao Supabase: autenticação real (e-mail/senha) e dados
  * salvos na nuvem (Postgres). As assinaturas continuam as mesmas do mock,
- * então nenhum componente precisou mudar — só este arquivo.
+ * então nenhum componente precisou mudar - só este arquivo.
  *
  * Convenções mantidas do app:
  * - valores monetários em CENTAVOS (inteiros)
- * - shapes camelCase (tripId, paidBy, startDate…) — a tradução de/para
+ * - shapes camelCase (tripId, paidBy, startDate…) - a tradução de/para
  *   snake_case do banco acontece aqui dentro.
  */
 
@@ -76,14 +76,14 @@ function friendlyError(error) {
   const msg = error?.message ?? 'Erro inesperado.';
   if (msg.includes('Invalid login credentials')) return 'E-mail ou senha incorretos.';
   if (msg.includes('Email not confirmed'))
-    return 'E-mail ainda não confirmado — confira sua caixa de entrada.';
+    return 'E-mail ainda não confirmado. Confira sua caixa de entrada.';
   if (msg.includes('User already registered')) return 'Este e-mail já tem cadastro. Faça login.';
   if (msg.includes('Password should be at least'))
     return 'A senha precisa ter pelo menos 6 caracteres.';
   if (msg.includes('valid email')) return 'Digite um e-mail válido.';
   if (msg.includes('violates foreign key'))
     return 'Não dá pra remover: essa pessoa tem registros no app (despesas, viagens ou acertos).';
-  if (msg.includes('rate limit')) return 'Limite de e-mails atingido — tente de novo em ~1 hora.';
+  if (msg.includes('rate limit')) return 'Limite de e-mails atingido. Tente de novo em uma hora.';
   if (msg === '{}' || msg.trim() === '' || msg.includes('Error sending'))
     return 'Não foi possível enviar o e-mail agora. Verifique a configuração de SMTP no Supabase.';
   return msg;
@@ -295,7 +295,7 @@ export async function getExpenses(tripId) {
 }
 
 /**
- * Edita uma despesa (só o criador ou o admin — o banco valida via RLS).
+ * Edita uma despesa (só o criador ou o admin - o banco valida via RLS).
  * "changes" é a lista legível de alterações para o histórico:
  * [{ field: 'valor', old: 'R$ 100,00', new: 'R$ 120,00' }]
  */
@@ -337,7 +337,7 @@ export async function updateExpense(expenseId, expense, changes = []) {
   }
 }
 
-/** Exclui uma despesa (criador ou admin — RLS valida). */
+/** Exclui uma despesa (criador ou admin - RLS valida). */
 export async function deleteExpense(expenseId) {
   const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
   if (error) fail(error);
@@ -412,7 +412,7 @@ export async function settleDebt(tripId, { from, to, amount, note }) {
 }
 
 /** Apaga uma viagem/rolê (RLS: só o admin consegue). */
-/** Adiciona membros a uma viagem/rolê existente (criador ou admin — RLS valida). */
+/** Adiciona membros a uma viagem/rolê existente (criador ou admin - RLS valida). */
 export async function addTripMembers(tripId, userIds) {
   const { error } = await supabase
     .from('trip_members')
@@ -436,16 +436,16 @@ export async function needsOnboarding() {
 }
 
 /** Completa o cadastro do convidado: nome + senha (e foto opcional). */
-export async function completeOnboarding({ name, password, photo }) {
+export async function completeOnboarding({ name, password, photo, color }) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session) throw new Error('Sessão expirada — abra o link do e-mail de novo.');
+  if (!session) throw new Error('Sessão expirada. Abra o link do e-mail de novo.');
   const { error } = await supabase.auth.updateUser({ password, data: { name } });
   if (error) fail(error);
   const { error: profileError } = await supabase
     .from('profiles')
-    .update({ name, photo: photo || null })
+    .update({ name, photo: photo || null, color: color || '#F0146B' })
     .eq('id', session.user.id);
   if (profileError) fail(profileError);
 }
@@ -480,7 +480,7 @@ export async function changePassword(newPassword) {
 
 /* ---------------- Rolês abertos ---------------- */
 
-/** Entra num rolê aberto (type = 'role') — vale como confirmação de presença. */
+/** Entra num rolê aberto (type = 'role') - vale como confirmação de presença. */
 export async function joinTrip(tripId) {
   const me = (await supabase.auth.getSession()).data.session?.user?.id;
   const { error } = await supabase

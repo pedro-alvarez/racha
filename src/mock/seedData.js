@@ -1,5 +1,5 @@
 /**
- * seedData.js — dados fake para o protótipo nascer navegável.
+ * seedData.js - dados fake para o protótipo nascer navegável.
  * Valores monetários em CENTAVOS.
  * Quando o backend real existir, este arquivo deixa de ser usado
  * (o dataService passa a buscar tudo da API).
@@ -55,7 +55,7 @@ export const seedExpenses = [
   {
     id: 'e-1',
     tripId: 't-ubatuba',
-    description: 'Airbnb — casa pé na areia (4 noites)',
+    description: 'Airbnb: casa pé na areia (4 noites)',
     category: 'hospedagem',
     amount: 240000,
     paidBy: 'u-marina',
@@ -77,7 +77,7 @@ export const seedExpenses = [
   {
     id: 'e-3',
     tripId: 't-ubatuba',
-    description: 'Mercado — compra da semana',
+    description: 'Mercado: compra da semana',
     category: 'comida',
     amount: 62350,
     paidBy: 'u-lucas',
@@ -177,7 +177,7 @@ export const seedPayments = [
     from: 'u-lucas',
     to: 'u-marina',
     amount: 30000,
-    note: 'Pix — parte do Airbnb',
+    note: 'Pix (parte do Airbnb)',
     createdAt: '2026-07-01T09:12:00Z',
   },
 ];

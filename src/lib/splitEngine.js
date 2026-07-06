@@ -1,5 +1,5 @@
 /**
- * splitEngine.js — motor de cálculo de divisão de despesas.
+ * splitEngine.js - motor de cálculo de divisão de despesas.
  *
  * 100% desacoplado da UI e do dataService: recebe dados puros, devolve dados puros.
  * Todos os valores monetários são tratados em CENTAVOS (inteiros) para evitar
@@ -105,7 +105,7 @@ export function validateExpense(expense) {
  * Saldo líquido de cada membro a partir de despesas e pagamentos.
  *
  * @param {Array} expenses  despesas [{ amount, paidBy, participants, splitType, shares }]
- * @param {Array} payments  acertos [{ from, to, amount }] — "from" pagou "to"
+ * @param {Array} payments  acertos [{ from, to, amount }] - "from" pagou "to"
  * @param {Array} memberIds ids de todos os membros do grupo
  * @returns {Object} { [memberId]: saldoEmCentavos }
  */

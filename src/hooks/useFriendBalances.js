@@ -1,5 +1,5 @@
 /**
- * useFriendBalances — saldo líquido entre VOCÊ e cada pessoa, somando todas
+ * useFriendBalances - saldo líquido entre VOCÊ e cada pessoa, somando todas
  * as viagens. Positivo = a pessoa te deve; negativo = você deve a ela.
  */
 import { useMemo } from 'react';

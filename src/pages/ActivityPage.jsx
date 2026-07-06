@@ -1,5 +1,5 @@
 /**
- * Histórico de Atividades — timeline com filtros por viagem/rolê e por tipo,
+ * Histórico de Atividades - timeline com filtros por viagem/rolê e por tipo,
  * agrupada por dia (Hoje / Ontem / data), como na referência.
  */
 import { useMemo, useState } from 'react';

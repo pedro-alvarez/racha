@@ -43,7 +43,7 @@ export default function SettlementPlan({ simplified, pairwise }) {
 
       {transfers.length === 0 ? (
         <div className="card-flat p-5 mt-3 text-sm text-muted text-center">
-          Ninguém deve nada — contas em dia ✨
+          Ninguém deve nada. Contas em dia ✨
         </div>
       ) : (
         <>
