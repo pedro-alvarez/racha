@@ -507,7 +507,8 @@ export async function approveUser(userId) {
 }
 
 export async function rejectUser(userId) {
-  const { error } = await supabase.from('profiles').delete().eq('id', userId);
+  // apaga perfil E conta de login (função com privilégio no banco valida se é admin)
+  const { error } = await supabase.rpc('admin_delete_user', { target: userId });
   if (error) fail(error);
 }
 

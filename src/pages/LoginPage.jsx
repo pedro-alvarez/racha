@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wallet } from 'lucide-react';
 import * as dataService from '../lib/dataService';
+import { useApp } from '../context/AppContext';
 
 export default function LoginPage() {
   const [mode, setMode] = useState('login'); // login | signup
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { refreshAll } = useApp();
 
   const isSignup = mode === 'signup';
 
@@ -37,10 +39,12 @@ export default function LoginPage() {
           setInfo('Conta criada! Confira seu e-mail e clique no link de confirmação para entrar.');
           setMode('login');
         } else {
+          await refreshAll(); // garante o usuário carregado antes de entrar
           navigate('/');
         }
       } else {
         await dataService.login(email.trim(), password);
+        await refreshAll(); // sem isso o Layout devolvia pro login (o famoso "logar 2x")
         navigate('/');
       }
     } catch (err) {
