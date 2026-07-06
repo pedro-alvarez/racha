@@ -230,7 +230,8 @@ export async function getInvites() {
 
 /** Revoga um convite pendente. */
 export async function revokeInvite(inviteId) {
-  const { error } = await supabase.from('invites').delete().eq('id', inviteId);
+  // função do banco: apaga o convite e o login fantasma, se houver
+  const { error } = await supabase.rpc('revoke_invite', { p_invite: inviteId });
   if (error) fail(error);
 }
 
@@ -441,13 +442,18 @@ export async function completeOnboarding({ name, password, photo, color }) {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) throw new Error('Sessão expirada. Abra o link do e-mail de novo.');
+
+  // 1º o banco: cria o perfil, aceita convites e forma as amizades
+  const { error: rpcError } = await supabase.rpc('complete_onboarding', {
+    p_name: name,
+    p_photo: photo || '',
+    p_color: color || '',
+  });
+  if (rpcError) fail(rpcError);
+
+  // depois a senha + nome nos metadados (é isso que encerra o modo cadastro)
   const { error } = await supabase.auth.updateUser({ password, data: { name } });
   if (error) fail(error);
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({ name, photo: photo || null, color: color || '#F0146B' })
-    .eq('id', session.user.id);
-  if (profileError) fail(profileError);
 }
 
 /** Edições de despesas feitas por uma pessoa (para o histórico do perfil). */
