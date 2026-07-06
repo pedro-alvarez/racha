@@ -192,10 +192,13 @@ export async function inviteFriend(email) {
     .upsert({ email, invited_by: me }, { onConflict: 'email,invited_by' });
   if (inviteError) fail(inviteError);
 
-  // dispara o e-mail com link mágico que cria a conta
+// dispara o e-mail com link mágico que cria a conta
   const { error: otpError } = await supabase.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: true },
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: 'https://pedro-alvarez.github.io/racha/',
+    },
   });
   if (otpError) fail(otpError);
 
