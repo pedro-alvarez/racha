@@ -32,8 +32,6 @@ export default function NewTripPage() {
     e.preventDefault();
     if (!name.trim()) return setError(type === 'role' ? 'Dê um nome para o rolê.' : 'Dê um nome para a viagem.');
     // rolês podem nascer só com o criador — as pessoas entram sozinhas depois
-    if (type !== 'role' && selected.size === 0)
-      return setError('Adicione pelo menos um membro além de você.');
     setSaving(true);
     const trip = await createTrip({
       name: name.trim(),
