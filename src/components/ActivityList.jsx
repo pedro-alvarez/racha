@@ -7,6 +7,7 @@
 import { useNavigate } from 'react-router-dom';
 import Avatar from './Avatar';
 import { useApp } from '../context/AppContext';
+import { useExpenseModal } from '../context/ExpenseModalContext';
 import { categoryOf, PAYMENT_ICON } from '../lib/categories';
 import { computeShares } from '../lib/splitEngine';
 import { formatCents, formatTime, firstName } from '../lib/format';
@@ -39,7 +40,10 @@ function CategoryBubble({ item, payer, onOpenProfile }) {
         size="xs"
         ring
         className="absolute -bottom-1 -right-1"
-        onClick={onOpenProfile}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpenProfile();
+        }}
       />
     </div>
   );
@@ -47,6 +51,7 @@ function CategoryBubble({ item, payer, onOpenProfile }) {
 
 export function ActivityItem({ item }) {
   const { userById, currentUser } = useApp();
+  const { openExpense } = useExpenseModal();
   const navigate = useNavigate();
   const impact = useImpact(item);
 
@@ -77,7 +82,10 @@ export function ActivityItem({ item }) {
   const { iPaid, iParticipate, myShare, toReceive } = impact;
 
   return (
-    <li className="card-flat p-4 flex items-center gap-3">
+    <li
+      onClick={() => openExpense(item)}
+      className="card-flat p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition"
+    >
       <CategoryBubble item={item} payer={payer} onOpenProfile={() => navigate(`/perfil/${payer.id}`)} />
       <div className="flex-1 min-w-0">
         <p className="font-semibold truncate">{item.description}</p>
@@ -107,6 +115,7 @@ export function ActivityItem({ item }) {
 
 export function TimelineItem({ item, isLast }) {
   const { userById, currentUser } = useApp();
+  const { openExpense } = useExpenseModal();
   const navigate = useNavigate();
   const impact = useImpact(item);
   const HandIcon = PAYMENT_ICON;
@@ -128,7 +137,10 @@ export function TimelineItem({ item, isLast }) {
       </div>
 
       {/* card */}
-      <div className="card-flat p-4 flex-1 min-w-0 mb-3">
+      <div
+        onClick={() => !impact.isPayment && openExpense(item)}
+        className={`card-flat p-4 flex-1 min-w-0 mb-3 ${impact.isPayment ? '' : 'cursor-pointer hover:bg-white/5 transition'}`}
+      >
         <div className="flex items-start justify-between gap-3">
           <p className="font-semibold">
             {impact.isPayment

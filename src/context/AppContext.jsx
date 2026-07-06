@@ -85,6 +85,22 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
+  const updateExpense = useCallback(
+    async (expenseId, expense, changes) => {
+      await dataService.updateExpense(expenseId, expense, changes);
+      await refreshAll();
+    },
+    [refreshAll]
+  );
+
+  const deleteExpense = useCallback(
+    async (expenseId) => {
+      await dataService.deleteExpense(expenseId);
+      await refreshAll();
+    },
+    [refreshAll]
+  );
+
   const settleDebt = useCallback(
     async (tripId, payment) => {
       await dataService.settleDebt(tripId, payment);
@@ -149,6 +165,8 @@ export function AppProvider({ children }) {
       setSelectedTripId,
       loading,
       addExpense,
+      updateExpense,
+      deleteExpense,
       settleDebt,
       createTrip,
       joinTrip,
@@ -169,6 +187,8 @@ export function AppProvider({ children }) {
       selectedTripId,
       loading,
       addExpense,
+      updateExpense,
+      deleteExpense,
       settleDebt,
       createTrip,
       joinTrip,

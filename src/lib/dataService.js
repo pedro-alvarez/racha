@@ -50,6 +50,7 @@ const mapExpense = (row) => {
     category: row.category,
     amount: row.amount,
     paidBy: row.paid_by,
+    createdBy: row.created_by ?? row.paid_by,
     splitType: row.split_type,
     participants: parts.map((p) => p.user_id),
     createdAt: row.created_at,
@@ -285,6 +286,71 @@ export async function getExpenses(tripId) {
     .order('created_at', { ascending: true });
   if (error) fail(error);
   return data.map(mapExpense);
+}
+
+/**
+ * Edita uma despesa (só o criador ou o admin — o banco valida via RLS).
+ * "changes" é a lista legível de alterações para o histórico:
+ * [{ field: 'valor', old: 'R$ 100,00', new: 'R$ 120,00' }]
+ */
+export async function updateExpense(expenseId, expense, changes = []) {
+  const me = (await supabase.auth.getSession()).data.session?.user?.id;
+
+  const { error } = await supabase
+    .from('expenses')
+    .update({
+      description: expense.description,
+      category: expense.category ?? 'outros',
+      amount: expense.amount,
+      paid_by: expense.paidBy,
+      split_type: expense.splitType ?? 'equal',
+    })
+    .eq('id', expenseId);
+  if (error) fail(error);
+
+  // troca os participantes/partes
+  const { error: delError } = await supabase
+    .from('expense_participants')
+    .delete()
+    .eq('expense_id', expenseId);
+  if (delError) fail(delError);
+  const rows = expense.participants.map((userId) => ({
+    expense_id: expenseId,
+    user_id: userId,
+    share: expense.shares?.[userId] ?? null,
+  }));
+  const { error: insError } = await supabase.from('expense_participants').insert(rows);
+  if (insError) fail(insError);
+
+  // registra o histórico
+  if (changes.length > 0) {
+    const { error: histError } = await supabase
+      .from('expense_history')
+      .insert({ expense_id: expenseId, edited_by: me, changes });
+    if (histError) fail(histError);
+  }
+}
+
+/** Exclui uma despesa (criador ou admin — RLS valida). */
+export async function deleteExpense(expenseId) {
+  const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
+  if (error) fail(error);
+}
+
+/** Histórico de alterações de uma despesa (mais recente primeiro). */
+export async function getExpenseHistory(expenseId) {
+  const { data, error } = await supabase
+    .from('expense_history')
+    .select('*, editor:profiles!expense_history_edited_by_fkey(name)')
+    .eq('expense_id', expenseId)
+    .order('created_at', { ascending: false });
+  if (error) fail(error);
+  return data.map((row) => ({
+    id: row.id,
+    editorName: row.editor?.name ?? 'Alguém',
+    changes: row.changes ?? [],
+    createdAt: row.created_at,
+  }));
 }
 
 export async function addExpense(tripId, expense) {

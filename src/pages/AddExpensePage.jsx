@@ -1,7 +1,7 @@
 /**
- * Adicionar despesa: descrição, valor, pagador, categoria e 4 modos de divisão
- * (igual, valores fixos, percentual, subconjunto de membros).
- * Toda a validação vem do splitEngine (validateExpense).
+ * Adicionar OU editar despesa (rota com :expenseId = edição).
+ * Na edição, as mudanças são comparadas e gravadas no histórico
+ * (expense_history), exibido no modal de detalhes.
  */
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -18,21 +18,38 @@ const SPLIT_OPTIONS = [
   { id: SPLIT_TYPES.PERCENT, label: '%' },
 ];
 
+const centsToText = (cents) => (cents / 100).toFixed(2).replace('.', ',');
+
 export default function AddExpensePage() {
-  const { tripId } = useParams();
-  const { trips, userById, currentUser, addExpense } = useApp();
+  const { tripId, expenseId } = useParams();
+  const { trips, userById, currentUser, addExpense, updateExpense, expensesByTrip } = useApp();
   const navigate = useNavigate();
 
   const trip = trips.find((t) => t.id === tripId);
   const members = useMemo(() => (trip ? trip.members.map(userById) : []), [trip, userById]);
 
-  const [description, setDescription] = useState('');
-  const [amountText, setAmountText] = useState('');
-  const [paidBy, setPaidBy] = useState(currentUser?.id);
-  const [category, setCategory] = useState('comida');
-  const [splitType, setSplitType] = useState(SPLIT_TYPES.EQUAL);
-  const [participants, setParticipants] = useState(new Set(trip?.members ?? []));
-  const [shareTexts, setShareTexts] = useState({});
+  // modo edição: despesa original (se a rota tiver :expenseId)
+  const original = expenseId
+    ? (expensesByTrip[tripId] ?? []).find((e) => e.id === expenseId) ?? null
+    : null;
+
+  const [description, setDescription] = useState(original?.description ?? '');
+  const [amountText, setAmountText] = useState(original ? centsToText(original.amount) : '');
+  const [paidBy, setPaidBy] = useState(original?.paidBy ?? currentUser?.id);
+  const [category, setCategory] = useState(original?.category ?? 'comida');
+  const [splitType, setSplitType] = useState(original?.splitType ?? SPLIT_TYPES.EQUAL);
+  const [participants, setParticipants] = useState(
+    new Set(original?.participants ?? trip?.members ?? [])
+  );
+  const [shareTexts, setShareTexts] = useState(() => {
+    if (!original?.shares) return {};
+    return Object.fromEntries(
+      Object.entries(original.shares).map(([id, v]) => [
+        id,
+        original.splitType === SPLIT_TYPES.FIXED ? centsToText(v) : String(v),
+      ])
+    );
+  });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -79,9 +96,42 @@ export default function AddExpensePage() {
     }
 
     setSaving(true);
-    await addExpense(tripId, expense);
-    navigate(`/viagem/${tripId}`);
+    try {
+      if (original) {
+        await updateExpense(expenseId, expense, buildChanges(original, expense));
+      } else {
+        await addExpense(tripId, expense);
+      }
+      navigate(`/viagem/${tripId}`);
+    } catch (err) {
+      setSaving(false);
+      setError(err.message);
+    }
   };
+
+  /** Compara a despesa original com a editada e gera o registro do histórico. */
+  function buildChanges(oldE, newE) {
+    const changes = [];
+    const catLabel = (k) => CATEGORIES[k]?.label ?? k;
+    const who = (id) => (id === currentUser.id ? 'Você' : firstName(userById(id).name));
+    const splitDesc = (e) => {
+      const labels = { equal: 'igual', fixed: 'valores fixos', percent: 'percentual' };
+      return `${labels[e.splitType] ?? e.splitType} · ${e.participants.length} pessoas`;
+    };
+    if (oldE.description !== newE.description)
+      changes.push({ field: 'descrição', old: oldE.description, new: newE.description });
+    if (oldE.amount !== newE.amount)
+      changes.push({ field: 'valor', old: formatCents(oldE.amount), new: formatCents(newE.amount) });
+    if (oldE.category !== newE.category)
+      changes.push({ field: 'categoria', old: catLabel(oldE.category), new: catLabel(newE.category) });
+    if (oldE.paidBy !== newE.paidBy)
+      changes.push({ field: 'quem pagou', old: who(oldE.paidBy), new: who(newE.paidBy) });
+    const oldSplit = JSON.stringify({ t: oldE.splitType, p: [...oldE.participants].sort(), s: oldE.shares ?? null });
+    const newSplit = JSON.stringify({ t: newE.splitType, p: [...newE.participants].sort(), s: Object.keys(newE.shares ?? {}).length ? newE.shares : null });
+    if (oldSplit !== newSplit)
+      changes.push({ field: 'divisão', old: splitDesc(oldE), new: splitDesc(newE) });
+    return changes;
+  }
 
   const inputCls =
     'w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm placeholder:text-muted focus:outline-none focus:border-accent/60';
@@ -94,7 +144,7 @@ export default function AddExpensePage() {
       <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted hover:text-white">
         <ArrowLeft size={16} /> {trip.name}
       </button>
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Nova despesa</h1>
+      <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{original ? 'Editar despesa' : 'Nova despesa'}</h1>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
@@ -235,7 +285,7 @@ export default function AddExpensePage() {
           disabled={saving}
           className="w-full py-3.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold disabled:opacity-50"
         >
-          {saving ? 'Salvando…' : 'Adicionar despesa'}
+          {saving ? 'Salvando…' : original ? 'Salvar alterações' : 'Adicionar despesa'}
         </button>
       </form>
     </div>

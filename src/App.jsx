@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
+import { ExpenseModalProvider } from './context/ExpenseModalContext';
 import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
 import LoginPage from './pages/LoginPage';
@@ -32,6 +33,7 @@ export default function App() {
     <AppProvider>
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       <HashRouter>
+        <ExpenseModalProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<Layout />}>
@@ -40,6 +42,7 @@ export default function App() {
             <Route path="/viagens/nova" element={<NewTripPage />} />
             <Route path="/viagem/:tripId" element={<OverviewPage />} />
             <Route path="/viagem/:tripId/nova-despesa" element={<AddExpensePage />} />
+            <Route path="/viagem/:tripId/despesa/:expenseId/editar" element={<AddExpensePage />} />
             <Route path="/viagem/:tripId/acertar" element={<SettlePage />} />
             <Route path="/amigos" element={<FriendsPage />} />
             <Route path="/atividade" element={<ActivityPage />} />
@@ -51,6 +54,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </ExpenseModalProvider>
       </HashRouter>
     </AppProvider>
   );
