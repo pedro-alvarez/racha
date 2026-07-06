@@ -204,8 +204,11 @@ export async function inviteFriend(email) {
       emailRedirectTo: 'https://pedro-alvarez.github.io/racha/',
     },
   });
-  if (otpError) {     // rollback: se o e-mail não saiu, não deixa convite pendente pra trás     await supabase.from('invites').delete().eq('email', email).eq('invited_by', me);     fail(otpError);   }
-
+if (otpError) {
+    // rollback: se o e-mail não saiu, não deixa convite pendente pra trás
+    await supabase.from('invites').delete().eq('email', email).eq('invited_by', me);
+    fail(otpError);
+  }
   return { status: 'invited' };
 }
 
