@@ -412,6 +412,61 @@ export async function settleDebt(tripId, { from, to, amount, note }) {
 }
 
 /** Apaga uma viagem/rolê (RLS: só o admin consegue). */
+/** Adiciona membros a uma viagem/rolê existente (criador ou admin — RLS valida). */
+export async function addTripMembers(tripId, userIds) {
+  const { error } = await supabase
+    .from('trip_members')
+    .upsert(
+      userIds.map((userId) => ({ trip_id: tripId, user_id: userId })),
+      { onConflict: 'trip_id,user_id', ignoreDuplicates: true }
+    );
+  if (error) fail(error);
+}
+
+/**
+ * Convidado que entrou pelo link mágico ainda não definiu nome/senha?
+ * (Quem se cadastra normal tem "name" nos metadados; o convidado não.)
+ */
+export async function needsOnboarding() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return false;
+  return !session.user.user_metadata?.name;
+}
+
+/** Completa o cadastro do convidado: nome + senha (e foto opcional). */
+export async function completeOnboarding({ name, password, photo }) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error('Sessão expirada — abra o link do e-mail de novo.');
+  const { error } = await supabase.auth.updateUser({ password, data: { name } });
+  if (error) fail(error);
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ name, photo: photo || null })
+    .eq('id', session.user.id);
+  if (profileError) fail(profileError);
+}
+
+/** Edições de despesas feitas por uma pessoa (para o histórico do perfil). */
+export async function getUserEdits(userId) {
+  const { data, error } = await supabase
+    .from('expense_history')
+    .select('*, expense:expenses(description)')
+    .eq('edited_by', userId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  if (error) fail(error);
+  return data.map((row) => ({
+    id: row.id,
+    expenseDescription: row.expense?.description ?? 'despesa',
+    changes: row.changes ?? [],
+    createdAt: row.created_at,
+  }));
+}
+
 export async function deleteTrip(tripId) {
   const { error } = await supabase.from('trips').delete().eq('id', tripId);
   if (error) fail(error);

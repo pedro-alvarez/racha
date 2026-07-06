@@ -8,7 +8,7 @@ import { ArrowLeft, Camera, Check, Copy, Lock, Pencil, QrCode, Trash2 } from 'lu
 import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
 import { useFriendBalances } from '../hooks/useFriendBalances';
-import { formatCentsAbs } from '../lib/format';
+import { formatCentsAbs, formatCents, formatDateFull, formatTime, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
 
 export const PIX_TYPES = {
@@ -26,6 +26,8 @@ export default function ProfilePage() {
   const balances = useFriendBalances();
   const navigate = useNavigate();
 
+  const { trips, expensesByTrip, paymentsByTrip } = useApp();
+  const [edits, setEdits] = useState([]);
   const user = userById(userId);
   const isMe = userId === currentUser?.id;
   const isAdmin = currentUser?.role === 'admin';
@@ -67,6 +69,59 @@ export default function ProfilePage() {
       pixKey: user?.pix?.key ?? '',
     });
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // histórico: tudo que a pessoa criou, pagou, acertou e alterou
+  useEffect(() => {
+    let alive = true;
+    dataService
+      .getUserEdits(userId)
+      .then((e) => alive && setEdits(e))
+      .catch(() => alive && setEdits([]));
+    return () => (alive = false);
+  }, [userId]);
+
+  const historyItems = (() => {
+    const items = [];
+    for (const trip of trips) {
+      if (trip.createdBy === userId && trip.createdAt) {
+        items.push({
+          t: trip.createdAt,
+          text: `criou ${trip.type === 'role' ? 'o rolê' : 'a viagem'} "${trip.name}"`,
+        });
+      }
+      for (const e of expensesByTrip[trip.id] ?? []) {
+        if ((e.createdBy ?? e.paidBy) === userId) {
+          items.push({
+            t: e.createdAt,
+            text: `criou a despesa "${e.description}" (${formatCents(e.amount)}) em ${trip.name}`,
+          });
+        } else if (e.paidBy === userId) {
+          items.push({
+            t: e.createdAt,
+            text: `pagou "${e.description}" (${formatCents(e.amount)}) em ${trip.name}`,
+          });
+        }
+      }
+      for (const pay of paymentsByTrip[trip.id] ?? []) {
+        if (pay.from === userId) {
+          const to = userById(pay.to);
+          items.push({
+            t: pay.createdAt,
+            text: `acertou ${formatCents(pay.amount)} com ${firstName(to.name)} em ${trip.name}`,
+          });
+        }
+      }
+    }
+    for (const ed of edits) {
+      for (const c of ed.changes) {
+        items.push({
+          t: ed.createdAt,
+          text: `alterou ${c.field} de "${ed.expenseDescription}": ${c.old} → ${c.new}`,
+        });
+      }
+    }
+    return items.sort((a, b) => new Date(b.t) - new Date(a.t)).slice(0, 15);
+  })();
 
   const copyPix = async () => {
     try {
@@ -183,6 +238,35 @@ export default function ProfilePage() {
               )}
             </section>
           )}
+
+          {/* Histórico de atividade da pessoa */}
+          <section className="mt-6">
+            <p className="label-caps">Histórico</p>
+            {historyItems.length === 0 ? (
+              <div className="card-flat p-4 mt-2.5 text-sm text-muted text-center">
+                Nenhuma atividade ainda.
+              </div>
+            ) : (
+              <ul className="mt-2.5 space-y-2 stagger">
+                {historyItems.map((h, i) => (
+                  <li key={i} className="card-flat px-4 py-3 flex items-start gap-2.5">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-muted-light">
+                        <span className="font-semibold text-white">
+                          {isMe ? 'Você' : firstName(user.name)}
+                        </span>{' '}
+                        {h.text}
+                      </p>
+                      <p className="text-[11px] text-muted mt-0.5">
+                        {formatDateFull(h.t)} às {formatTime(h.t)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </>
       ) : (
         /* ---------- modo edição ---------- */

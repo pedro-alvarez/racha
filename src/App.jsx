@@ -12,6 +12,8 @@ import { ExpenseModalProvider } from './context/ExpenseModalContext';
 import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
 import LoginPage from './pages/LoginPage';
+import OnboardingPage from './pages/OnboardingPage';
+import TripMembersPage from './pages/TripMembersPage';
 import OverviewPage from './pages/OverviewPage';
 import TripsPage from './pages/TripsPage';
 import NewTripPage from './pages/NewTripPage';
@@ -36,11 +38,13 @@ export default function App() {
         <ExpenseModalProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/bem-vindo" element={<OnboardingPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<OverviewPage />} />
             <Route path="/viagens" element={<TripsPage />} />
             <Route path="/viagens/nova" element={<NewTripPage />} />
             <Route path="/viagem/:tripId" element={<OverviewPage />} />
+            <Route path="/viagem/:tripId/membros" element={<TripMembersPage />} />
             <Route path="/viagem/:tripId/nova-despesa" element={<AddExpensePage />} />
             <Route path="/viagem/:tripId/despesa/:expenseId/editar" element={<AddExpensePage />} />
             <Route path="/viagem/:tripId/acertar" element={<SettlePage />} />

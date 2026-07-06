@@ -51,7 +51,7 @@ function navClasses(isActive) {
 }
 
 export default function Layout() {
-  const { currentUser, loading } = useApp();
+  const { currentUser, loading, needsOnboarding } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -65,6 +65,7 @@ export default function Layout() {
 
   // Gate de autenticação: sem sessão, só a tela de login é acessível
   if (!currentUser) return <Navigate to="/login" replace />;
+  if (needsOnboarding) return <Navigate to="/bem-vindo" replace />;
 
   // Gate de aprovação: conta nova espera o OK do admin
   if (!currentUser.approved && currentUser.role !== 'admin') return <PendingApproval />;

@@ -18,6 +18,7 @@ export function AppProvider({ children }) {
   const [paymentsByTrip, setPaymentsByTrip] = useState({});
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   const refreshAll = useCallback(async () => {
     const user = await dataService.getCurrentUser();
@@ -32,15 +33,18 @@ export function AppProvider({ children }) {
       setExpensesByTrip({});
       setPaymentsByTrip({});
       setSelectedTripId(null);
+      setNeedsOnboarding(false);
       setLoading(false);
       return;
     }
 
-    const [allUsers, allTrips, allFriends] = await Promise.all([
+    const [allUsers, allTrips, allFriends, onboarding] = await Promise.all([
       dataService.getUsers(),
       dataService.getTrips(),
       dataService.getFriends(),
+      dataService.needsOnboarding(),
     ]);
+    setNeedsOnboarding(onboarding);
 
     // "minhas": sou membro. "eventos abertos": eventos visíveis que ainda não entrei.
     const mine = allTrips.filter((t) => t.members.includes(user.id));
@@ -59,7 +63,9 @@ export function AppProvider({ children }) {
     setFriends(allFriends);
     setExpensesByTrip(Object.fromEntries(expensesEntries));
     setPaymentsByTrip(Object.fromEntries(paymentsEntries));
-    setSelectedTripId((prev) => prev ?? mine[0]?.id ?? null);
+    setSelectedTripId((prev) =>
+      prev && mine.some((t) => t.id === prev) ? prev : mine[0]?.id ?? null
+    );
     setLoading(false);
   }, []);
 
@@ -119,6 +125,14 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
+  const addTripMembers = useCallback(
+    async (tripId, userIds) => {
+      await dataService.addTripMembers(tripId, userIds);
+      await refreshAll();
+    },
+    [refreshAll]
+  );
+
   const deleteTrip = useCallback(
     async (tripId) => {
       await dataService.deleteTrip(tripId);
@@ -171,6 +185,8 @@ export function AppProvider({ children }) {
       createTrip,
       joinTrip,
       deleteTrip,
+      addTripMembers,
+      needsOnboarding,
       updateUser,
       logout,
       refreshAll,
@@ -193,6 +209,8 @@ export function AppProvider({ children }) {
       createTrip,
       joinTrip,
       deleteTrip,
+      addTripMembers,
+      needsOnboarding,
       updateUser,
       logout,
       refreshAll,

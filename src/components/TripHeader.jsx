@@ -1,6 +1,6 @@
 /** Header da viagem/rolê: nome, membros + datas/hora, descrição, avatares.
  *  Admin vê também o botão de apagar (lixeira). */
-import { Settings, Trash2 } from 'lucide-react';
+import { Settings, Trash2, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AvatarStack from './AvatarStack';
 import { useApp } from '../context/AppContext';
@@ -16,8 +16,8 @@ export default function TripHeader({ trip }) {
   const handleDelete = async () => {
     const label = isRole ? 'este rolê' : 'esta viagem';
     if (!confirm(`Apagar ${label}? Todas as despesas e acertos vão junto. Não dá pra desfazer.`)) return;
+    navigate('/', { replace: true }); // sai da rota da viagem ANTES de apagar
     await deleteTrip(trip.id);
-    navigate('/');
   };
 
   return (
@@ -32,6 +32,13 @@ export default function TripHeader({ trip }) {
             <Trash2 size={17} />
           </button>
         )}
+        <button
+          aria-label="Membros"
+          onClick={() => navigate(`/viagem/${trip.id}/membros`)}
+          className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-muted-light hover:text-white transition-colors"
+        >
+          <UserPlus size={17} />
+        </button>
         <button
           aria-label="Todas as viagens"
           onClick={() => navigate('/viagens')}
@@ -49,7 +56,9 @@ export default function TripHeader({ trip }) {
           {trip.members.length} {isRole ? 'confirmados' : 'membros'} · {formatDateRange(trip.startDate, trip.endDate)}
           {trip.startTime && ` · ${trip.startTime}`}
         </p>
-        <AvatarStack users={members} max={4} />
+        <button aria-label="Ver membros" onClick={() => navigate(`/viagem/${trip.id}/membros`)}>
+          <AvatarStack users={members} max={4} />
+        </button>
       </div>
       {trip.description && (
         <p className="mt-2.5 text-sm text-muted-light bg-white/5 border border-white/5 rounded-2xl px-4 py-3">
