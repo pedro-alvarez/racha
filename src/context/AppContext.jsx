@@ -107,6 +107,22 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
+  const confirmPayment = useCallback(
+    async (paymentId) => {
+      await dataService.confirmPayment(paymentId);
+      await refreshAll();
+    },
+    [refreshAll]
+  );
+
+  const declinePayment = useCallback(
+    async (paymentId) => {
+      await dataService.declinePayment(paymentId);
+      await refreshAll();
+    },
+    [refreshAll]
+  );
+
   const settleDebt = useCallback(
     async (tripId, payment) => {
       await dataService.settleDebt(tripId, payment);
@@ -182,6 +198,8 @@ export function AppProvider({ children }) {
       updateExpense,
       deleteExpense,
       settleDebt,
+      confirmPayment,
+      declinePayment,
       createTrip,
       joinTrip,
       deleteTrip,
@@ -206,6 +224,8 @@ export function AppProvider({ children }) {
       updateExpense,
       deleteExpense,
       settleDebt,
+      confirmPayment,
+      declinePayment,
       createTrip,
       joinTrip,
       deleteTrip,

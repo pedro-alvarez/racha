@@ -73,7 +73,14 @@ export function ActivityItem({ item }) {
             {item.tripName ? `${item.tripName} · ` : ''}Acerto registrado
           </p>
         </div>
-        <p className="font-bold text-positive">{formatCents(item.amount)}</p>
+        <div className="text-right shrink-0">
+          <p className={`font-bold ${item.status === 'pending' ? 'text-amber-300' : 'text-positive'}`}>
+            {formatCents(item.amount)}
+          </p>
+          {item.status === 'pending' && (
+            <p className="text-[10px] font-bold text-amber-300/80 uppercase tracking-wide">aguardando</p>
+          )}
+        </div>
       </li>
     );
   }

@@ -8,15 +8,17 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Share2, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
+import PaymentModal from '../components/PaymentModal';
 import { formatCentsAbs, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
 
 export default function SettlePage() {
   const { tripId } = useParams();
-  const { userById, currentUser, settleDebt } = useApp();
-  const { trip, simplified, expenses } = useTripSummary(tripId);
+  const { userById, currentUser, confirmPayment, declinePayment } = useApp();
+  const { trip, simplified, expenses, pendingPayments } = useTripSummary(tripId);
   const navigate = useNavigate();
-  const [settlingKey, setSettlingKey] = useState(null);
+  const [payingTransfer, setPayingTransfer] = useState(null);
+  const [busyId, setBusyId] = useState(null);
   const [shared, setShared] = useState(false);
 
   if (!trip) return null;
@@ -24,10 +26,23 @@ export default function SettlePage() {
   const total = simplified.reduce((acc, t) => acc + t.amount, 0);
   const displayName = (u) => (u.id === currentUser.id ? 'Você' : firstName(u.name));
 
-  const handleSettle = async (t, key) => {
-    setSettlingKey(key);
-    await settleDebt(tripId, { from: t.from, to: t.to, amount: t.amount, note: 'Acerto' });
-    setSettlingKey(null);
+  const handleConfirm = async (paymentId) => {
+    setBusyId(paymentId);
+    try {
+      await confirmPayment(paymentId);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDecline = async (paymentId) => {
+    if (!confirm('Recusar este pagamento? Ele será removido.')) return;
+    setBusyId(paymentId);
+    try {
+      await declinePayment(paymentId);
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const handleShare = async () => {
@@ -129,17 +144,79 @@ export default function SettlePage() {
                 </div>
 
                 <button
-                  onClick={() => handleSettle(t, key)}
-                  disabled={settlingKey === key}
+                  onClick={() => setPayingTransfer(t)}
+                  disabled={false}
                   className="mt-4 w-full py-2.5 rounded-2xl bg-positive/15 text-positive text-sm font-bold hover:bg-positive/25 transition disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <Check size={15} />
-                  {settlingKey === key ? 'Registrando…' : 'Marcar como pago'}
+                  Marcar como pago
                 </button>
               </li>
             );
           })}
         </ul>
+      )}
+      {/* pagamentos aguardando confirmação */}
+      {pendingPayments.length > 0 && (
+        <section className="mt-7">
+          <h2 className="text-lg font-bold">Aguardando confirmação</h2>
+          <ul className="mt-3 space-y-2.5 stagger">
+            {pendingPayments.map((p) => {
+              const from = userById(p.from);
+              const to = userById(p.to);
+              const iAmReceiver = p.to === currentUser.id;
+              const iAmPayer = p.from === currentUser.id;
+              return (
+                <li key={p.id} className="card-flat p-4 border-amber-400/20">
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      <Avatar user={from} size="sm" ring />
+                      <Avatar user={to} size="sm" ring />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">
+                        {iAmPayer ? 'Você' : firstName(from.name)} pagou{' '}
+                        {iAmReceiver ? 'você' : firstName(to.name)}
+                      </p>
+                      <p className="text-xs text-amber-300 mt-0.5">
+                        {iAmReceiver ? 'confirma que recebeu?' : `aguardando ${firstName(to.name)} confirmar`}
+                      </p>
+                    </div>
+                    <p className="font-extrabold">{formatCentsAbs(p.amount)}</p>
+                  </div>
+                  {(iAmReceiver || iAmPayer) && (
+                    <div className="mt-3 flex gap-2">
+                      {iAmReceiver && (
+                        <button
+                          onClick={() => handleConfirm(p.id)}
+                          disabled={busyId === p.id}
+                          className="flex-1 py-2.5 rounded-2xl bg-positive/15 text-positive text-xs font-bold hover:bg-positive/25 transition disabled:opacity-50"
+                        >
+                          Confirmar recebimento
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDecline(p.id)}
+                        disabled={busyId === p.id}
+                        className="flex-1 py-2.5 rounded-2xl bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20 transition disabled:opacity-50"
+                      >
+                        {iAmReceiver ? 'Recusar' : 'Cancelar'}
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {payingTransfer && (
+        <PaymentModal
+          transfer={payingTransfer}
+          tripId={tripId}
+          onClose={() => setPayingTransfer(null)}
+        />
       )}
     </div>
   );

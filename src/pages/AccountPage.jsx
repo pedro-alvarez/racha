@@ -40,6 +40,7 @@ function Row({ Icon, label, value, dot, onClick }) {
 export default function AccountPage() {
   const { currentUser, logout } = useApp();
   const balances = useFriendBalances();
+  const { trips, paymentsByTrip } = useApp();
   const navigate = useNavigate();
 
   const isAdmin = currentUser?.role === 'admin';
@@ -54,7 +55,11 @@ export default function AccountPage() {
         .catch(() => setPendingCount(0));
   }, [isAdmin]);
 
-  const hasPendingDebts = Object.values(balances).some((v) => v !== 0);
+  const hasPendingConfirmation = trips.some((t) =>
+    (paymentsByTrip[t.id] ?? []).some((p) => p.status === 'pending' && p.to === currentUser?.id)
+  );
+  const hasPendingDebts =
+    hasPendingConfirmation || Object.values(balances).some((v) => v !== 0);
   const goProfile = () => navigate(`/perfil/${currentUser.id}`);
 
   return (

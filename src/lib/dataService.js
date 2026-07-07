@@ -68,6 +68,7 @@ const mapPayment = (row) => ({
   to: row.to_user,
   amount: row.amount,
   note: row.note,
+  status: row.status ?? 'confirmed',
   createdAt: row.created_at,
 });
 
@@ -403,13 +404,32 @@ export async function getPayments(tripId) {
 
 /** Registra um acerto: "from" pagou "amount" (centavos) para "to". */
 export async function settleDebt(tripId, { from, to, amount, note }) {
+  const me = (await supabase.auth.getSession()).data.session?.user?.id;
+  // quem RECEBE registrando ("já recebi") confirma na hora;
+  // quem PAGA registra como pendente e o recebedor precisa aceitar
+  const status = me === to ? 'confirmed' : 'pending';
   const { data, error } = await supabase
     .from('payments')
-    .insert({ trip_id: tripId, from_user: from, to_user: to, amount, note: note ?? '' })
+    .insert({ trip_id: tripId, from_user: from, to_user: to, amount, note: note ?? '', status })
     .select()
     .single();
   if (error) fail(error);
   return mapPayment(data);
+}
+
+/** Quem recebeu confirma o pagamento (entra no saldo). */
+export async function confirmPayment(paymentId) {
+  const { error } = await supabase
+    .from('payments')
+    .update({ status: 'confirmed' })
+    .eq('id', paymentId);
+  if (error) fail(error);
+}
+
+/** Recusar (recebedor) ou cancelar (pagador) um pagamento pendente. */
+export async function declinePayment(paymentId) {
+  const { error } = await supabase.from('payments').delete().eq('id', paymentId);
+  if (error) fail(error);
 }
 
 /** Apaga uma viagem/rolê (RLS: só o admin consegue). */

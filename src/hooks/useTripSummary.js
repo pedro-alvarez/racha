@@ -16,12 +16,16 @@ export function useTripSummary(tripId) {
     const payments = paymentsByTrip[tripId] ?? [];
 
     if (!trip) {
-      return { trip: null, expenses, payments, balances: {}, simplified: [], pairwise: [], activity: [], myBalance: 0, totalSpent: 0 };
+      return { trip: null, expenses, payments, balances: {}, simplified: [], pairwise: [], activity: [], pendingPayments: [], myBalance: 0, totalSpent: 0 };
     }
 
-    const balances = computeBalances(expenses, payments, trip.members);
+    // só pagamentos CONFIRMADOS contam no saldo; pendentes ficam de fora
+    const confirmed = payments.filter((p) => p.status !== 'pending');
+    const pendingPayments = payments.filter((p) => p.status === 'pending');
+
+    const balances = computeBalances(expenses, confirmed, trip.members);
     const simplified = simplifyDebts(balances);
-    const pairwise = pairwiseDebts(expenses, payments);
+    const pairwise = pairwiseDebts(expenses, confirmed);
 
     const activity = [
       ...expenses.map((e) => ({ ...e, kind: 'expense' })),
@@ -31,6 +35,6 @@ export function useTripSummary(tripId) {
     const totalSpent = expenses.reduce((acc, e) => acc + e.amount, 0);
     const myBalance = currentUser ? balances[currentUser.id] ?? 0 : 0;
 
-    return { trip, expenses, payments, balances, simplified, pairwise, activity, myBalance, totalSpent };
+    return { trip, expenses, payments, balances, simplified, pairwise, activity, pendingPayments, myBalance, totalSpent };
   }, [trips, expensesByTrip, paymentsByTrip, tripId, currentUser]);
 }
