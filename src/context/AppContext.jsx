@@ -19,9 +19,11 @@ export function AppProvider({ children }) {
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   const refreshAll = useCallback(async () => {
     const user = await dataService.getCurrentUser();
+    setIsDemo(dataService.isDemoMode());
 
     // Sem sessão: limpa tudo (o Layout redireciona para /login)
     if (!user) {
@@ -175,6 +177,20 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
+  /** Modo demonstração: entra com os dados fictícios do seedData. */
+  const enterDemo = useCallback(async () => {
+    await dataService.enterDemo();
+    setSelectedTripId(null);
+    await refreshAll();
+  }, [refreshAll]);
+
+  /** Modo demonstração: desfaz tudo que foi feito e volta ao seed. */
+  const resetDemo = useCallback(async () => {
+    await dataService.resetDemo();
+    setSelectedTripId(null);
+    await refreshAll();
+  }, [refreshAll]);
+
   const logout = useCallback(async () => {
     await dataService.logout();
     setSelectedTripId(null);
@@ -206,6 +222,9 @@ export function AppProvider({ children }) {
       addTripMembers,
       needsOnboarding,
       updateUser,
+      isDemo,
+      enterDemo,
+      resetDemo,
       logout,
       refreshAll,
     }),
@@ -232,6 +251,9 @@ export function AppProvider({ children }) {
       addTripMembers,
       needsOnboarding,
       updateUser,
+      isDemo,
+      enterDemo,
+      resetDemo,
       logout,
       refreshAll,
     ]
