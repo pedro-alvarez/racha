@@ -3,7 +3,7 @@
 Carteira compartilhada de grupo: organize viagens e rolês, registre gastos,
 veja quem deve para quem e acerte as contas com o mínimo de transferências.
 
-**🔗 Acesse:** https://pedro-alvarez.github.io/racha/
+**🔗 Acesse:** https://pedro-alvarez.github.io/racha/ · **🎬 Demonstração em vídeo:** https://youtu.be/me9ZOfMMa7w
 
 > **Professor(a), comece por aqui:** na tela de login, clique em
 > **"Explorar o modo demonstração"**. Não precisa de cadastro nem de senha:
@@ -158,6 +158,6 @@ fixa.
   funcionais revisados, com o status de implementação de cada um.
 - [`docs/diagramas.md`](docs/diagramas.md): diagramas UML de sequência e de
   atividade dos fluxos do protótipo (Mermaid, o GitHub desenha direto na página).
-- **Vídeos:** _(adicionar os links)_
-  - Demonstração do fluxo principal: `link aqui`
-  - Apresentação (2 min): `link aqui`
+- **Vídeos:**
+  - Demonstração do fluxo principal (1min49s): https://youtu.be/me9ZOfMMa7w
+  - Apresentação (2 min): _(adicionar o link)_
