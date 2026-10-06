@@ -4,7 +4,8 @@
  * Desktop (>= md): sidebar fixa à esquerda + conteúdo em área central.
  */
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ListTodo, CircleUserRound, Wallet, Hourglass, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { LayoutDashboard, Users, ListTodo, CircleUserRound, Wallet, Hourglass, LogOut, FlaskConical, RotateCcw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Avatar from './Avatar';
 
@@ -37,6 +38,52 @@ function PendingApproval() {
   );
 }
 
+/** Faixa fixa no topo enquanto o modo demonstração estiver ativo. */
+function DemoBanner() {
+  const { resetDemo, logout } = useApp();
+  const navigate = useNavigate();
+  const [resetting, setResetting] = useState(false);
+
+  const handleReset = async () => {
+    if (!confirm('Restaurar os dados de demonstração? Tudo que você criou ou alterou será desfeito.')) return;
+    setResetting(true);
+    try {
+      await resetDemo();
+      navigate('/');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  return (
+    <div className="sticky top-0 z-40 bg-amber-400/10 border-b border-amber-400/20 backdrop-blur px-4 py-2">
+      <div className="max-w-3xl mx-auto flex items-center gap-3 text-xs">
+        <FlaskConical size={15} className="text-amber-300 shrink-0" />
+        <p className="flex-1 min-w-0 text-amber-100">
+          <span className="font-bold">Modo demonstração</span>
+          <span className="hidden sm:inline"> · dados fictícios, salvos só neste navegador</span>
+        </p>
+        <button
+          onClick={handleReset}
+          disabled={resetting}
+          className="flex items-center gap-1 font-semibold text-amber-200 hover:text-white transition disabled:opacity-50"
+        >
+          <RotateCcw size={13} /> {resetting ? 'Restaurando…' : 'Restaurar'}
+        </button>
+        <button
+          onClick={async () => {
+            await logout();
+            navigate('/login');
+          }}
+          className="flex items-center gap-1 font-semibold text-amber-200 hover:text-white transition"
+        >
+          <LogOut size={13} /> Sair
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const NAV_ITEMS = [
   { to: '/', label: 'Visão Geral', Icon: LayoutDashboard, end: true },
   { to: '/amigos', label: 'Amigos', Icon: Users },
@@ -51,7 +98,7 @@ function navClasses(isActive) {
 }
 
 export default function Layout() {
-  const { currentUser, loading, needsOnboarding } = useApp();
+  const { currentUser, loading, needsOnboarding, isDemo } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -104,6 +151,7 @@ export default function Layout() {
 
       {/* Conteúdo */}
       <div className="flex-1 min-w-0">
+        {isDemo && <DemoBanner />}
         <main className="max-w-lg md:max-w-3xl mx-auto px-5 md:px-10 pt-4 pb-28 md:pb-12 md:pt-8">
           {/* key na rota faz cada tela entrar com animação */}
           <div key={location.pathname} className="page-enter">
