@@ -1,13 +1,13 @@
 /**
  * LoginPage: autenticação por e-mail e senha (Supabase).
- * Não existe "criar conta" aqui de propósito: a entrada no Racha é
- * somente por convite, e o cadastro acontece na tela que o link
- * do e-mail abre (/bem-vindo).
+ * Quem não tem conta cria uma em /criar-conta (sem depender de e-mail) e
+ * espera a aprovação do admin; convidados também podem seguir o link do
+ * e-mail, que abre o cadastro em /bem-vindo.
  * Quem só quer conhecer o app entra pelo modo demonstração (dados
  * fictícios, sem conta e sem aprovação do admin).
  */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PlayCircle, Wallet } from 'lucide-react';
 import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
@@ -109,9 +109,11 @@ export default function LoginPage() {
           Sem cadastro: você entra como admin de um grupo com dados fictícios.
         </p>
 
-        <p className="mt-6 text-center text-xs text-muted">
-          Ainda não tem conta? O Racha é só por convite: peça pra alguém do
-          grupo te convidar e siga o link que chega no seu e-mail.
+        <p className="mt-6 text-center text-sm text-muted">
+          Ainda não tem conta?{' '}
+          <Link to="/criar-conta" className="font-bold text-accent-bright hover:underline">
+            Criar conta
+          </Link>
         </p>
       </div>
     </div>

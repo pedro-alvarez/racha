@@ -49,7 +49,7 @@ com dados mockados e, por trás, um backend real já funcionando.
 
 | | Modo demonstração | App real |
 |---|---|---|
-| Como entra | Botão "Explorar o modo demonstração" | E-mail e senha (conta criada por convite) |
+| Como entra | Botão "Explorar o modo demonstração" | E-mail e senha (conta criada em "Criar conta" ou por convite) |
 | Dados | Fictícios (`src/mock/seedData.js`), guardados no `localStorage` | Supabase (Postgres + Auth + Storage) |
 | Aprovação do admin | Não precisa | Conta nova espera o admin aprovar |
 | E-mails de convite | Simulados (o convite só aparece na lista) | Enviados de verdade, com link mágico |
@@ -100,6 +100,11 @@ nesta ordem: `schema.sql` → `upgrade-v2.sql` → `upgrade-v3.sql` →
 `upgrade-v4.sql` → `upgrade-v5.sql`. Os modelos de e-mail de convite estão em
 `supabase/email-templates.md`. Depois, troque a URL e a chave em
 `src/lib/supabaseClient.js`.
+
+A tela **Criar conta** usa a Edge Function `supabase/functions/criar-conta`: ela
+cria o login já confirmado, sem depender de e-mail, e a conta espera a aprovação
+do admin. Publique com `supabase functions deploy criar-conta --no-verify-jwt`
+(a chave publishable do app não é um JWT).
 
 ## Arquitetura
 

@@ -105,16 +105,25 @@ export async function login(email, password) {
   return getCurrentUser();
 }
 
+/**
+ * Cadastro aberto pela tela inicial, sem depender de e-mail: a Edge Function
+ * "criar-conta" cria o login já confirmado e aqui a pessoa já entra. A conta
+ * nasce sem aprovação, então ela vê a tela de espera até o admin liberar.
+ */
 export async function signUp(name, email, password) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { name } },
+  const { error } = await supabase.functions.invoke('criar-conta', {
+    body: { name, email, password },
   });
-  if (error) fail(error);
-  // Se a confirmação por e-mail estiver ativa, ainda não há sessão.
-  if (!data.session) return { needsConfirmation: true };
-  return { user: await getCurrentUser() };
+  if (error) {
+    let message = '';
+    try {
+      message = (await error.context.json()).error;
+    } catch {
+      /* resposta sem corpo JSON */
+    }
+    throw new Error(message || 'Não foi possível criar a conta agora. Tente de novo em instantes.');
+  }
+  return login(email, password);
 }
 
 export async function logout() {
