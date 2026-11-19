@@ -44,6 +44,16 @@ export function formatRelative(iso) {
 }
 
 /** Converte string digitada ("123,45") para centavos. */
+/**
+ * Máscara de valor estilo app de banco: só dígitos, preenchidos a partir dos
+ * centavos ("1" → "0,01", "1234" → "12,34", "123456" → "1.234,56").
+ */
+export function maskCents(text) {
+  const digits = String(text ?? '').replace(/\D/g, '').replace(/^0+/, '').slice(0, 11);
+  if (!digits) return '';
+  return (Number(digits) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function parseToCents(text) {
   if (text == null || text === '') return 0;
   const clean = String(text).replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');

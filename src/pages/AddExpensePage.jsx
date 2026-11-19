@@ -9,7 +9,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES } from '../lib/categories';
 import { SPLIT_TYPES, validateExpense } from '../lib/splitEngine';
-import { parseToCents, formatCents, firstName } from '../lib/format';
+import { parseToCents, formatCents, firstName, maskCents } from '../lib/format';
 import Avatar from '../components/Avatar';
 
 const SPLIT_OPTIONS = [
@@ -34,7 +34,7 @@ export default function AddExpensePage() {
     : null;
 
   const [description, setDescription] = useState(original?.description ?? '');
-  const [amountText, setAmountText] = useState(original ? centsToText(original.amount) : '');
+  const [amountText, setAmountText] = useState(original ? maskCents(String(original.amount)) : '');
   const [paidBy, setPaidBy] = useState(original?.paidBy ?? currentUser?.id);
   const [category, setCategory] = useState(original?.category ?? 'comida');
   const [splitType, setSplitType] = useState(original?.splitType ?? SPLIT_TYPES.EQUAL);
@@ -162,11 +162,11 @@ export default function AddExpensePage() {
           <div className="relative mt-2">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-semibold">R$</span>
             <input
-              inputMode="decimal"
+              inputMode="numeric"
               className={`${inputCls} pl-11 text-lg font-bold`}
               placeholder="0,00"
               value={amountText}
-              onChange={(e) => setAmountText(e.target.value)}
+              onChange={(e) => setAmountText(maskCents(e.target.value))}
             />
           </div>
         </div>
