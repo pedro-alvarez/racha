@@ -122,7 +122,15 @@ export async function signUp(name, email, password) {
     }
     throw new Error(message || 'Não foi possível criar a conta agora. Tente de novo em instantes.');
   }
-  return login(email, password);
+  await login(email, password);
+  // cria o perfil (ainda sem aprovação) e forma as amizades de convites pendentes
+  const { error: rpcError } = await supabase.rpc('complete_onboarding', {
+    p_name: name,
+    p_photo: '',
+    p_color: '',
+  });
+  if (rpcError) fail(rpcError);
+  return getCurrentUser();
 }
 
 export async function logout() {
