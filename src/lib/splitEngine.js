@@ -174,83 +174,60 @@ export function computeBalances(expenses = [], payments = [], memberIds = []) {
 }
 
 /**
- * Simplificação de dívidas (algoritmo guloso):
- * quem mais deve paga para quem mais tem a receber, até zerar todo mundo.
- * Minimiza o número de transferências (no máximo n-1).
+ * Dívidas diretas: para cada dupla (A, B), quanto A deve a B, considerando
+ * cada despesa (a parte de A numa despesa que B pagou) e os pagamentos já
+ * feitos. Dívidas cruzadas entre a mesma dupla se compensam.
  *
- * @returns {Array} transferências [{ from, to, amount }]
- */
-export function simplifyDebts(balances) {
-  const debtors = [];
-  const creditors = [];
-
-  for (const [id, balance] of Object.entries(balances)) {
-    if (balance < 0) debtors.push({ id, remaining: -balance });
-    else if (balance > 0) creditors.push({ id, remaining: balance });
-  }
-
-  debtors.sort((a, b) => b.remaining - a.remaining);
-  creditors.sort((a, b) => b.remaining - a.remaining);
-
-  const transfers = [];
-  let d = 0;
-  let c = 0;
-
-  while (d < debtors.length && c < creditors.length) {
-    const pay = Math.min(debtors[d].remaining, creditors[c].remaining);
-    if (pay > 0) {
-      transfers.push({ from: debtors[d].id, to: creditors[c].id, amount: pay });
-    }
-    debtors[d].remaining -= pay;
-    creditors[c].remaining -= pay;
-    if (debtors[d].remaining === 0) d += 1;
-    if (creditors[c].remaining === 0) c += 1;
-  }
-
-  return transfers;
-}
-
-/**
- * Dívidas par a par SEM simplificação: para cada dupla (A, B), quanto A deve a B
- * considerando cada despesa individualmente, menos os pagamentos já feitos.
+ * Cada dívida traz em `items` a justificativa: as despesas e pagamentos que
+ * formam o valor, com `amount` positivo quando aumenta a dívida de `from`
+ * para `to` e negativo quando diminui. A soma de `items` é `amount`.
  *
- * @returns {Array} [{ from, to, amount }] com amount > 0
+ * @returns {Array} [{ from, to, amount, items }] com amount > 0
  */
 export function pairwiseDebts(expenses = [], payments = []) {
-  // matriz: debt[devedor][credor] = centavos
-  const debt = {};
-  const add = (from, to, amount) => {
+  // por dupla (a < b): saldo "a deve b" e os lançamentos nessa direção
+  const pairs = {};
+  const add = (from, to, amount, item) => {
     if (from === to || amount === 0) return;
-    debt[from] = debt[from] ?? {};
-    debt[from][to] = (debt[from][to] ?? 0) + amount;
+    const [a, b] = from < to ? [from, to] : [to, from];
+    const key = `${a}|${b}`;
+    pairs[key] = pairs[key] ?? { a, b, net: 0, items: [] };
+    const signed = from === a ? amount : -amount;
+    pairs[key].net += signed;
+    pairs[key].items.push({ ...item, amount: signed });
   };
 
   for (const expense of expenses) {
     const shares = computeShares(expense);
     for (const [memberId, share] of Object.entries(shares)) {
-      add(memberId, expense.paidBy, share);
+      add(memberId, expense.paidBy, share, {
+        kind: 'expense',
+        id: expense.id,
+        description: expense.description,
+        date: expense.date ?? expense.createdAt,
+        owedBy: memberId,
+        paidBy: expense.paidBy,
+      });
     }
   }
   for (const p of payments) {
-    // pagamento reduz a dívida de from para to
-    add(p.from, p.to, -p.amount);
+    // pagamento de "from" para "to" diminui a dívida de from com to
+    add(p.from, p.to, -p.amount, { kind: 'payment', id: p.id, date: p.createdAt, from: p.from, to: p.to });
   }
 
-  // compensa dívidas cruzadas (A deve B e B deve A)
   const result = [];
-  const seen = new Set();
-  for (const from of Object.keys(debt)) {
-    for (const to of Object.keys(debt[from])) {
-      const key = [from, to].sort().join('|');
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const ab = debt[from]?.[to] ?? 0;
-      const ba = debt[to]?.[from] ?? 0;
-      const net = ab - ba;
-      if (net > 0) result.push({ from, to, amount: net });
-      else if (net < 0) result.push({ from: to, to: from, amount: -net });
-    }
+  for (const { a, b, net, items } of Object.values(pairs)) {
+    if (net === 0) continue;
+    const forward = net > 0;
+    result.push({
+      from: forward ? a : b,
+      to: forward ? b : a,
+      amount: Math.abs(net),
+      items: items
+        .map((it) => ({ ...it, amount: forward ? it.amount : -it.amount }))
+        .sort((x, y) => String(x.date).localeCompare(String(y.date))),
+    });
   }
 
-  return result.sort((a, b) => b.amount - a.amount);
+  return result.sort((x, y) => y.amount - x.amount);
 }

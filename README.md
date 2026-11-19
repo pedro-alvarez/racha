@@ -25,7 +25,7 @@ link de um convite. A conta nova espera a aprovação do admin do grupo.
 | Fluxo | Onde | O que faz |
 |-------|------|-----------|
 | **Criar conta** | Login → "Criar conta" | Nome, e-mail e senha, sem depender de e-mail; a conta espera o admin aprovar |
-| **Ver saldos** | Visão Geral (arraste os cards ou use os chips) | Saldo seu em cada viagem e o **Plano de Acerto** simplificado |
+| **Ver saldos** | Visão Geral (arraste os cards ou use os chips) | Saldo seu em cada viagem e o **Plano de Acerto**; toque numa dívida para ver de onde ela vem |
 | **Criar viagem** | Visão Geral → "Todas as viagens" → **+ Novo** | Nome, emoji, datas e membros. A viagem vira o card ativo |
 | **Lançar despesa** | Botão **+** rosa (canto inferior direito) | Divisão **igual**, **valores fixos** ou **percentual**, validada antes de salvar |
 | **Editar despesa** | Toque numa despesa da lista → **Editar** | A alteração entra no **histórico** da despesa |
@@ -120,8 +120,9 @@ Para trocar de backend, basta mexer nele, sem tocar nas telas.
   sempre bate com o total.
 - `validateExpense`: garante que as partes ou percentuais fecham com o total.
 - `computeBalances`: saldo líquido de cada membro (despesas + acertos confirmados).
-- `simplifyDebts`: algoritmo guloso que minimiza transferências (no máximo n-1).
-- `pairwiseDebts`: todas as dívidas par a par (modo "não simplificado").
+- `pairwiseDebts`: dívidas diretas (cada um paga a quem pagou a despesa dele),
+  compensando dívidas cruzadas entre a mesma dupla. Cada dívida traz a
+  justificativa: as despesas e pagamentos que formam o valor.
 
 ### Design system
 

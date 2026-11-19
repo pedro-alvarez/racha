@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   computeShares,
   computeBalances,
-  simplifyDebts,
   pairwiseDebts,
   validateExpense,
   fillRemainder,
@@ -97,26 +96,6 @@ describe('computeBalances', () => {
   });
 });
 
-describe('simplifyDebts', () => {
-  it('gera no máximo n-1 transferências e zera todo mundo', () => {
-    const balances = { a: 500, b: -200, c: -300 };
-    const transfers = simplifyDebts(balances);
-    expect(transfers.length).toBeLessThanOrEqual(2);
-    const net = { a: 0, b: 0, c: 0 };
-    transfers.forEach((t) => {
-      net[t.from] += t.amount;
-      net[t.to] -= t.amount;
-    });
-    expect(net.a + balances.a).toBe(500 - 500);
-    expect(balances.b + net.b).toBe(0);
-    expect(balances.c + net.c).toBe(0);
-  });
-
-  it('devolve vazio quando tudo zerado', () => {
-    expect(simplifyDebts({ a: 0, b: 0 })).toEqual([]);
-  });
-});
-
 describe('pairwiseDebts', () => {
   it('compensa dívidas cruzadas', () => {
     const expenses = [
@@ -124,7 +103,7 @@ describe('pairwiseDebts', () => {
       { amount: 40, paidBy: 'b', splitType: SPLIT_TYPES.EQUAL, participants: ['a', 'b'] },
     ];
     const debts = pairwiseDebts(expenses, []);
-    expect(debts).toEqual([{ from: 'b', to: 'a', amount: 30 }]);
+    expect(debts.map(({ from, to, amount }) => ({ from, to, amount }))).toEqual([{ from: 'b', to: 'a', amount: 30 }]);
   });
 
   it('subtrai pagamentos já feitos', () => {
@@ -180,5 +159,26 @@ describe('computeBalances com despesa sem participantes', () => {
       ['miguel', 'andre', 'pedro']
     );
     expect(balances).toEqual({ miguel: 0, andre: 4150, pedro: -4150 });
+  });
+});
+
+describe('pairwiseDebts com justificativa', () => {
+  it('explica cada dívida pelas despesas e pagamentos', () => {
+    const expenses = [
+      { id: 'gas', description: 'Gasolina', date: '2026-11-18', amount: 9000, paidBy: 'miguel', splitType: SPLIT_TYPES.EQUAL, participants: ['andre', 'pedro', 'miguel'] },
+      { id: 'pad', description: 'Padaria', date: '2026-11-19', amount: 2000, paidBy: 'andre', splitType: SPLIT_TYPES.EQUAL, participants: ['andre', 'miguel'] },
+    ];
+    const payments = [{ id: 'p1', from: 'pedro', to: 'miguel', amount: 1000, createdAt: '2026-11-20T10:00:00Z' }];
+    const debts = pairwiseDebts(expenses, payments);
+
+    const andre = debts.find((d) => d.from === 'andre' && d.to === 'miguel');
+    expect(andre.amount).toBe(2000); // 3000 da gasolina - 1000 da padaria
+    expect(andre.items.map((i) => [i.id, i.amount])).toEqual([['gas', 3000], ['pad', -1000]]);
+
+    const pedro = debts.find((d) => d.from === 'pedro');
+    expect(pedro.amount).toBe(2000);
+    expect(pedro.items.map((i) => [i.kind, i.amount])).toEqual([['expense', 3000], ['payment', -1000]]);
+
+    for (const d of debts) expect(d.items.reduce((s, i) => s + i.amount, 0)).toBe(d.amount);
   });
 });

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BellRing, HandCoins } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { simplifyDebts, computeBalances } from '../lib/splitEngine';
+import { pairwiseDebts } from '../lib/splitEngine';
 import { formatCentsAbs, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
 
@@ -42,12 +42,7 @@ export default function NotificationsPage() {
 
   const notifications = trips.flatMap((trip) => {
     const confirmed = (paymentsByTrip[trip.id] ?? []).filter((x) => x.status !== 'pending');
-    const balances = computeBalances(
-      expensesByTrip[trip.id] ?? [],
-      confirmed,
-      trip.members
-    );
-    return simplifyDebts(balances)
+    return pairwiseDebts(expensesByTrip[trip.id] ?? [], confirmed)
       .filter((t) => t.from === currentUser.id || t.to === currentUser.id)
       .map((t) => ({ ...t, trip }));
   });
