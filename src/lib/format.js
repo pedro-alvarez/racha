@@ -71,9 +71,16 @@ export const initials = (name = '') =>
 
 export const firstName = (name = '') => name.split(' ')[0];
 
+/** Data local: "AAAA-MM-DD" vira meia-noite no fuso do aparelho (new Date
+ *  leria como UTC e, no Brasil, cairia no dia anterior). */
+function toLocalDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(iso);
+}
+
 /** Rótulo de agrupamento por dia: Hoje / Ontem / "12 jul". */
 export function dayLabel(iso) {
-  const d = new Date(iso);
+  const d = toLocalDate(iso);
   const now = new Date();
   const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diff = Math.round((startOf(now) - startOf(d)) / 86400000);
@@ -82,13 +89,15 @@ export function dayLabel(iso) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-/** Hora local HH:MM. */
-/** Data de hoje no fuso do aparelho, no formato do <input type="date"> (AAAA-MM-DD). */
-export function todayISO() {
-  const d = new Date();
+/** Dia (AAAA-MM-DD) de um instante no fuso do aparelho; sem argumento, hoje.
+ *  É o formato do <input type="date">. */
+export function todayISO(iso) {
+  const d = iso ? new Date(iso) : new Date();
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+
+/** Hora local HH:MM. */
 
 export function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
