@@ -2,11 +2,12 @@
  * Acerto Final - dívidas diretas (cada um paga a quem pagou a despesa dele).
  * Aba "Suas" (padrão): o que você deve e tem a receber; aba "Todos": a viagem
  * inteira, para consulta. Cada transação mostra a justificativa ("de onde
- * vem") e, se você paga ou recebe (ou é admin), "marcar pago".
+ * vem") e o botão de pagamento: "Pagar" para quem deve, "Recebi" para quem
+ * recebe e "Registrar pagamento" para o admin nas dívidas dos outros.
  */
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ReceiptText, Share2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, HandCoins, ReceiptText, Share2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import PaymentModal from '../components/PaymentModal';
@@ -159,6 +160,8 @@ export default function SettlePage() {
             const key = `${t.from}-${t.to}-${i}`;
             const isOpen = openKey === key;
             const mineTransfer = involvesMe(t);
+            const iPay = t.from === currentUser.id;
+            const iReceive = t.to === currentUser.id;
             return (
               <li key={key} className={`card-flat p-5 ${mineTransfer && tab === 'all' ? 'border-accent/30' : ''}`}>
                 <div className="flex items-center justify-between gap-2">
@@ -203,10 +206,14 @@ export default function SettlePage() {
                 {(mineTransfer || isAdmin) && (
                   <button
                     onClick={() => setPayingTransfer(t)}
-                    className="mt-4 w-full py-2.5 rounded-2xl bg-positive/15 text-positive text-sm font-bold hover:bg-positive/25 transition flex items-center justify-center gap-2"
+                    className={`mt-4 w-full py-3 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 ${
+                      iPay
+                        ? 'bg-gradient-to-br from-accent to-accent-bright text-white shadow-fab hover:brightness-110'
+                        : 'bg-positive/15 text-positive hover:bg-positive/25'
+                    }`}
                   >
-                    <Check size={15} />
-                    Marcar como pago
+                    {iPay ? <HandCoins size={16} /> : <Check size={15} />}
+                    {iPay ? `Pagar ${firstName(to.name)}` : iReceive ? 'Recebi' : 'Registrar pagamento'}
                   </button>
                 )}
               </li>

@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, PartyPopper, PlusCircle } from 'lucide-react';
+import { ChevronRight, PartyPopper, PlusCircle, Receipt } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import TripHeader from '../components/TripHeader';
@@ -14,6 +14,7 @@ import BalanceCard from '../components/BalanceCard';
 import SettlementPlan from '../components/SettlementPlan';
 import ActivityList from '../components/ActivityList';
 import Fab from '../components/Fab';
+import { formatCents } from '../lib/format';
 
 export default function OverviewPage() {
   const { tripId: routeTripId } = useParams();
@@ -28,7 +29,7 @@ export default function OverviewPage() {
   }, [routeTripId, selectedTripId, setSelectedTripId]);
 
   const tripId = routeTripId ?? selectedTripId;
-  const { trip, settlements, activity, myBalance } = useTripSummary(tripId);
+  const { trip, settlements, activity, myBalance, expenses, totalSpent } = useTripSummary(tripId);
 
   // mantém o chip da viagem ativa visível na faixa rolável
   useEffect(() => {
@@ -128,6 +129,23 @@ export default function OverviewPage() {
           Todas as viagens <ChevronRight size={14} />
         </Link>
       </div>
+
+      {/* atalho para a tela de despesas */}
+      <Link
+        to="/despesas"
+        className="card-flat p-4 mt-4 flex items-center gap-3.5 hover:bg-white/5 transition"
+      >
+        <span className="w-11 h-11 rounded-2xl bg-white/5 text-accent-bright flex items-center justify-center shrink-0">
+          <Receipt size={19} />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm">Despesas</p>
+          <p className="text-xs text-muted mt-0.5">
+            {expenses.length} {expenses.length === 1 ? 'despesa' : 'despesas'} · {formatCents(totalSpent)}
+          </p>
+        </div>
+        <ChevronRight size={16} className="text-muted shrink-0" />
+      </Link>
 
       {/* Rolês abertos esperando confirmação */}
       {openEvents.length > 0 && (

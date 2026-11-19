@@ -4,7 +4,7 @@
  * Desktop (>= md): sidebar fixa à esquerda + conteúdo em área central.
  */
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ListTodo, CircleUserRound, Wallet, Hourglass, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, Users, ListTodo, CircleUserRound, Wallet, Hourglass, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Avatar from './Avatar';
 
@@ -39,6 +39,7 @@ function PendingApproval() {
 
 const NAV_ITEMS = [
   { to: '/', label: 'Visão Geral', Icon: LayoutDashboard, end: true },
+  { to: '/despesas', label: 'Despesas', Icon: Receipt },
   { to: '/amigos', label: 'Amigos', Icon: Users },
   { to: '/atividade', label: 'Atividade', Icon: ListTodo },
   { to: '/conta', label: 'Conta', Icon: CircleUserRound },
@@ -113,7 +114,7 @@ export default function Layout() {
       </div>
 
       {/* Navegação inferior (mobile) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-ink-soft/95 backdrop-blur border-t border-white/5 px-6 pt-2.5 pb-6">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-ink-soft/95 backdrop-blur border-t border-white/5 px-4 pt-2.5 pb-6">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           {NAV_ITEMS.map(({ to, label, Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => navClasses(isActive)}>

@@ -4,7 +4,7 @@
  * (expense_history), exibido no modal de detalhes.
  */
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES } from '../lib/categories';
@@ -24,6 +24,7 @@ export default function AddExpensePage() {
   const { tripId, expenseId } = useParams();
   const { trips, userById, currentUser, addExpense, updateExpense, expensesByTrip } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const trip = trips.find((t) => t.id === tripId);
   const members = useMemo(() => (trip ? trip.members.map(userById) : []), [trip, userById]);
@@ -109,7 +110,10 @@ export default function AddExpensePage() {
       } else {
         await addExpense(tripId, expense);
       }
-      navigate(`/viagem/${tripId}`);
+      // volta para a tela de onde veio (Visão Geral, Despesas...); se abriu
+      // direto pelo link, vai para a viagem
+      if (location.key !== 'default') navigate(-1);
+      else navigate(`/viagem/${tripId}`, { replace: true });
     } catch (err) {
       setSaving(false);
       setError(err.message);

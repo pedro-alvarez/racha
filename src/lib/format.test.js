@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maskCents, parseToCents } from './format';
+import { dayLabel, maskCents, parseToCents, todayISO } from './format';
 
 describe('maskCents', () => {
   it('preenche a partir dos centavos', () => {
@@ -18,5 +18,14 @@ describe('maskCents', () => {
 
   it('volta a ser lido em centavos', () => {
     expect(parseToCents(maskCents('123456'))).toBe(123456);
+  });
+});
+
+describe('dayLabel', () => {
+  it('lê "AAAA-MM-DD" como dia local, sem cair no dia anterior', () => {
+    const d = new Date();
+    expect(dayLabel(todayISO())).toBe('Hoje');
+    d.setDate(d.getDate() - 1);
+    expect(dayLabel(todayISO(d.toISOString()))).toBe('Ontem');
   });
 });

@@ -26,6 +26,7 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
   const from = userById(transfer.from);
   const to = userById(transfer.to);
   const iAmReceiver = transfer.to === currentUser?.id;
+  const iAmPayer = transfer.from === currentUser?.id;
 
   // pagamentos de quem deve para quem recebe: os confirmados já saíram da
   // dívida; os pendentes ainda não, mas não podem ser pagos de novo
@@ -116,7 +117,9 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
           <X size={15} />
         </button>
 
-        <h2 className="text-lg font-extrabold">Registrar pagamento</h2>
+        <h2 className="text-lg font-extrabold">
+          {iAmPayer ? `Pagar ${firstName(to.name)}` : iAmReceiver ? 'Registrar recebimento' : 'Registrar pagamento'}
+        </h2>
 
         {/* quem paga quem */}
         <div className="mt-5 flex items-center justify-center gap-4">
@@ -305,7 +308,13 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
           disabled={saving}
           className="mt-4 w-full py-3.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold disabled:opacity-50"
         >
-          {saving ? 'Registrando…' : iAmReceiver ? 'Confirmar recebimento' : 'Enviar para confirmação'}
+          {saving
+            ? 'Registrando…'
+            : iAmReceiver
+              ? 'Confirmar recebimento'
+              : iAmPayer
+                ? `Pagar ${formatCentsAbs(amount)}`
+                : 'Registrar pagamento'}
         </button>
       </div>
     </div>,

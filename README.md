@@ -29,7 +29,8 @@ link de um convite. A conta nova espera a aprovação do admin do grupo.
 | **Criar viagem** | Visão Geral → "Todas as viagens" → **+ Novo** | Nome, emoji, datas e membros. A viagem vira o card ativo |
 | **Lançar despesa** | Botão **+** rosa (canto inferior direito) | Divisão **igual**, **valores fixos** ou **percentual**, validada antes de salvar |
 | **Editar despesa** | Toque numa despesa da lista → **Editar** | A alteração entra no **histórico** da despesa |
-| **Acertar contas** | Card de saldo → "Acertar contas" → **Marcar como pago** | Chave Pix do credor, e o saldo é recalculado na hora |
+| **Despesas** | Aba **Despesas** (ou o atalho na Visão Geral) | Só as despesas da viagem, por dia, com total, sua parte, busca e filtro |
+| **Acertar contas** | Card de saldo → "Acertar contas" → **Pagar** | Paga tudo, por despesa ou outro valor; mostra a chave Pix de quem recebe |
 | **Confirmar pagamento** | Conta → Notificações | Quem recebeu confirma ou recusa o pagamento |
 | **Rolê aberto** | Visão Geral → rolê aberto → **Eu vou! Entrar no rolê** | O rolê passa a aparecer entre os seus |
 | **Convidar amigo** | Amigos → digite um e-mail | E-mail já cadastrado vira amizade; e-mail novo recebe um convite com link |
