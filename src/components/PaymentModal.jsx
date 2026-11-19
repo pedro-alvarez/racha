@@ -2,16 +2,22 @@
  * Modal de registro de pagamento: mostra quem paga quem, o valor,
  * a chave Pix de quem recebe (com copiar) e envia para confirmação.
  * Se quem registra é o próprio recebedor, confirma na hora.
+ *
+ * Três jeitos de pagar: o total da dívida, por despesa (escolhe quais
+ * despesas está quitando; o pagamento guarda os ids delas) ou um valor livre.
  */
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, Check, Copy, QrCode, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { formatCentsAbs, firstName } from '../lib/format';
+import { formatCentsAbs, formatDate, firstName, maskCents, parseToCents } from '../lib/format';
 import Avatar from './Avatar';
 
 export default function PaymentModal({ transfer, tripId, onClose }) {
-  const { userById, currentUser, settleDebt } = useApp();
+  const { userById, currentUser, settleDebt, paymentsByTrip } = useApp();
+  const [mode, setMode] = useState('all');
+  const [selected, setSelected] = useState(new Set());
+  const [customText, setCustomText] = useState('');
   const [note, setNote] = useState('');
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -20,6 +26,26 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
   const from = userById(transfer.from);
   const to = userById(transfer.to);
   const iAmReceiver = transfer.to === currentUser?.id;
+
+  // despesas desta dívida que ainda não foram quitadas por um pagamento
+  // (confirmado ou aguardando confirmação) de quem deve para quem recebe
+  const paidIds = new Set(
+    (paymentsByTrip?.[tripId] ?? [])
+      .filter((p) => p.from === transfer.from && p.to === transfer.to)
+      .flatMap((p) => p.expenseIds ?? [])
+  );
+  const payable = (transfer.items ?? []).filter(
+    (it) => it.kind === 'expense' && it.amount > 0 && it.owedBy === transfer.from && !paidIds.has(it.id)
+  );
+  const selectedSum = payable.filter((it) => selected.has(it.id)).reduce((s, it) => s + it.amount, 0);
+  const customAmount = parseToCents(customText);
+  const amount = mode === 'all' ? transfer.amount : mode === 'expenses' ? selectedSum : customAmount;
+
+  const toggleExpense = (id) => {
+    const next = new Set(selected);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setSelected(next);
+  };
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -38,14 +64,19 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
   };
 
   const handleSubmit = async () => {
-    setSaving(true);
     setError('');
+    if (mode === 'expenses' && selected.size === 0) return setError('Escolha ao menos uma despesa.');
+    if (amount <= 0) return setError('Informe o valor do pagamento.');
+    if (mode === 'custom' && amount > transfer.amount)
+      return setError(`O valor passa do total da dívida (${formatCentsAbs(transfer.amount)}).`);
+    setSaving(true);
     try {
       await settleDebt(tripId, {
         from: transfer.from,
         to: transfer.to,
-        amount: transfer.amount,
+        amount,
         note: note.trim(),
+        expenseIds: mode === 'expenses' ? [...selected] : [],
       });
       onClose();
     } catch (err) {
@@ -79,14 +110,97 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
           <div className="flex flex-col items-center">
             <ArrowRight size={18} className="text-accent-bright" />
             <p className="mt-1 text-2xl font-extrabold text-accent-bright whitespace-nowrap">
-              {formatCentsAbs(transfer.amount)}
+              {formatCentsAbs(amount)}
             </p>
+            {amount !== transfer.amount && (
+              <p className="text-[11px] text-muted whitespace-nowrap">de {formatCentsAbs(transfer.amount)}</p>
+            )}
           </div>
           <div className="flex flex-col items-center gap-1.5">
             <Avatar user={to} size="lg" />
             <p className="text-xs font-semibold">{iAmReceiver ? 'Você' : firstName(to.name)}</p>
           </div>
         </div>
+
+        {/* quanto pagar */}
+        <div className="mt-5 flex rounded-full bg-white/5 p-1">
+          {[
+            { id: 'all', label: 'Tudo' },
+            { id: 'expenses', label: 'Por despesa' },
+            { id: 'custom', label: 'Outro valor' },
+          ].map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => {
+                setMode(m.id);
+                setError('');
+              }}
+              className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition ${
+                mode === m.id ? 'bg-accent text-white' : 'text-muted'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        {mode === 'expenses' && (
+          <div className="mt-3">
+            {payable.length === 0 ? (
+              <p className="text-sm text-muted text-center py-2">Não há despesas em aberto nesta dívida.</p>
+            ) : (
+              <ul className="space-y-2">
+                {payable.map((it) => {
+                  const on = selected.has(it.id);
+                  return (
+                    <li key={it.id}>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpense(it.id)}
+                        className={`w-full card-flat p-3 flex items-center gap-3 text-left transition ${on ? 'border-accent/50' : ''}`}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${on ? 'bg-accent' : 'bg-white/10'}`}
+                        >
+                          {on && <Check size={13} />}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold truncate">{it.description}</span>
+                          <span className="block text-[11px] text-muted">
+                            {formatDate(String(it.date).slice(0, 10))} · parte de{' '}
+                            {transfer.from === currentUser?.id ? 'você' : firstName(from.name)}
+                          </span>
+                        </span>
+                        <span className="text-sm font-bold">{formatCentsAbs(it.amount)}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {selectedSum > transfer.amount && (
+              <p className="mt-2 text-xs text-muted">
+                Passa do total da dívida porque {firstName(to.name)} também tem parte em despesas que{' '}
+                {transfer.from === currentUser?.id ? 'você pagou' : `${firstName(from.name)} pagou`}. A diferença
+                fica como crédito para {transfer.from === currentUser?.id ? 'você' : firstName(from.name)}.
+              </p>
+            )}
+          </div>
+        )}
+
+        {mode === 'custom' && (
+          <div className="relative mt-3">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-semibold">R$</span>
+            <input
+              inputMode="numeric"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-3 text-lg font-bold placeholder:text-muted focus:outline-none focus:border-accent/60"
+              placeholder="0,00"
+              value={customText}
+              onChange={(e) => setCustomText(maskCents(e.target.value))}
+            />
+          </div>
+        )}
 
         {/* pix de quem recebe */}
         {!iAmReceiver && (

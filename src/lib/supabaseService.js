@@ -69,6 +69,7 @@ const mapPayment = (row) => ({
   to: row.to_user,
   amount: row.amount,
   note: row.note,
+  expenseIds: row.expense_ids ?? [],
   status: row.status ?? 'confirmed',
   createdAt: row.created_at,
 });
@@ -434,14 +435,14 @@ export async function getPayments(tripId) {
 }
 
 /** Registra um acerto: "from" pagou "amount" (centavos) para "to". */
-export async function settleDebt(tripId, { from, to, amount, note }) {
+export async function settleDebt(tripId, { from, to, amount, note, expenseIds = [] }) {
   const me = (await supabase.auth.getSession()).data.session?.user?.id;
   // quem RECEBE registrando ("já recebi") confirma na hora;
   // quem PAGA registra como pendente e o recebedor precisa aceitar
   const status = me === to ? 'confirmed' : 'pending';
   const { data, error } = await supabase
     .from('payments')
-    .insert({ trip_id: tripId, from_user: from, to_user: to, amount, note: note ?? '', status })
+    .insert({ trip_id: tripId, from_user: from, to_user: to, amount, note: note ?? '', expense_ids: expenseIds, status })
     .select()
     .single();
   if (error) fail(error);

@@ -13,6 +13,11 @@ const shortDate = (d) =>
 export default function DebtBreakdown({ debt }) {
   const { currentUser, userById } = useApp();
   const name = (id) => (id === currentUser.id ? 'você' : firstName(userById(id).name));
+  // despesas quitadas por um pagamento "por despesa" desta mesma dívida
+  const descriptionOf = Object.fromEntries(
+    debt.items.filter((it) => it.kind === 'expense').map((it) => [it.id, it.description])
+  );
+  const paidIds = new Set(debt.items.filter((it) => it.kind === 'payment').flatMap((it) => it.expenseIds ?? []));
 
   return (
     <div className="mt-3 pt-3 border-t border-white/10 text-left">
@@ -23,11 +28,18 @@ export default function DebtBreakdown({ debt }) {
               <p className="font-semibold text-white truncate">
                 {it.kind === 'expense' ? it.description : 'Pagamento'}{' '}
                 <span className="font-normal text-muted">· {shortDate(it.date)}</span>
+                {it.kind === 'expense' && it.amount > 0 && paidIds.has(it.id) && (
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-positive/15 text-positive text-[10px] font-bold">paga</span>
+                )}
               </p>
               <p className="text-muted">
                 {it.kind === 'expense'
                   ? `${it.owedBy === currentUser.id ? 'sua parte' : `parte de ${name(it.owedBy)}`}, ${name(it.paidBy)} pagou`
-                  : `${name(it.from)} pagou ${name(it.to)}`}
+                  : `${name(it.from)} pagou ${name(it.to)}${
+                      it.expenseIds?.length
+                        ? `: ${it.expenseIds.map((id) => descriptionOf[id] ?? 'despesa').join(', ')}`
+                        : ''
+                    }`}
               </p>
             </div>
             <p className={`font-bold whitespace-nowrap ${it.amount > 0 ? 'text-muted-light' : 'text-positive'}`}>
