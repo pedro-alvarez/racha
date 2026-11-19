@@ -144,7 +144,7 @@ export default function AddExpensePage() {
   const autoLabel = (id) =>
     splitType === SPLIT_TYPES.FIXED
       ? centsToText(autoShares[id] ?? 0)
-      : String(autoShares[id] ?? 0).replace('.', ',');
+      : (autoShares[id] ?? 0).toFixed(2).replace('.', ',');
   // no modo %, quanto cada um paga em reais
   const percentCents =
     splitType === SPLIT_TYPES.PERCENT
