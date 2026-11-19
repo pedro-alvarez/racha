@@ -5,6 +5,7 @@ import {
   simplifyDebts,
   pairwiseDebts,
   validateExpense,
+  fillRemainder,
   SPLIT_TYPES,
 } from './splitEngine';
 
@@ -132,5 +133,33 @@ describe('pairwiseDebts', () => {
     ];
     const payments = [{ from: 'b', to: 'a', amount: 50 }];
     expect(pairwiseDebts(expenses, payments)).toEqual([]);
+  });
+});
+
+describe('fillRemainder', () => {
+  const quatro = ['pedro', 'akira', 'c', 'd'];
+
+  it('valores: quem ficou em branco divide o resto por igual', () => {
+    // total R$ 100: Pedro R$ 10, Akira R$ 20, os outros dois R$ 35 cada
+    const shares = fillRemainder(SPLIT_TYPES.FIXED, 10000, quatro, { pedro: 1000, akira: 2000 });
+    expect(shares).toEqual({ pedro: 1000, akira: 2000, c: 3500, d: 3500 });
+    expect(validateExpense({ amount: 10000, paidBy: 'pedro', splitType: SPLIT_TYPES.FIXED, participants: quatro, shares }).valid).toBe(true);
+  });
+
+  it('valores: centavos do arredondamento fecham o total', () => {
+    const shares = fillRemainder(SPLIT_TYPES.FIXED, 1000, ['a', 'b', 'c', 'd'], { a: 0 });
+    expect(Object.values(shares).reduce((s, v) => s + v, 0)).toBe(1000);
+  });
+
+  it('percentual: 50% para um e o resto dividido entre os outros', () => {
+    const shares = fillRemainder(SPLIT_TYPES.PERCENT, 9000, quatro, { pedro: 50 });
+    expect(shares.pedro).toBe(50);
+    expect(shares.akira + shares.c + shares.d).toBeCloseTo(50, 5);
+    expect(validateExpense({ amount: 9000, paidBy: 'pedro', splitType: SPLIT_TYPES.PERCENT, participants: quatro, shares }).valid).toBe(true);
+  });
+
+  it('se o preenchido já passa do total, os em branco ficam com zero', () => {
+    const shares = fillRemainder(SPLIT_TYPES.FIXED, 1000, ['a', 'b'], { a: 1500 });
+    expect(shares).toEqual({ a: 1500, b: 0 });
   });
 });
