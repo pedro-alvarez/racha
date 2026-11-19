@@ -21,10 +21,8 @@ export default function SettlementPlan({ settlements }) {
 
   return (
     <section className="mt-7">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-lg font-bold">Plano de Acerto</h2>
-        {settlements.length > 0 && <p className="text-xs text-muted">Toque numa dívida para ver de onde ela vem</p>}
-      </div>
+      <h2 className="text-lg font-bold">Plano de Acerto</h2>
+      {settlements.length > 0 && <p className="mt-0.5 text-xs text-muted">Toque numa dívida para ver de onde ela vem.</p>}
 
       {settlements.length === 0 ? (
         <div className="card-flat p-5 mt-3 text-sm text-muted text-center">
@@ -84,7 +82,7 @@ export default function SettlementPlan({ settlements }) {
                         <Avatar user={from} size="sm" ring />
                         <Avatar user={to} size="sm" ring />
                       </div>
-                      <p className="flex-1 text-sm text-muted-light truncate">
+                      <p className="flex-1 min-w-0 text-sm text-muted-light">
                         <span className="font-semibold text-white">{firstName(from.name)}</span> deve a{' '}
                         <span className="font-semibold text-white">{firstName(to.name)}</span>
                       </p>

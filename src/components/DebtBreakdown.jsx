@@ -26,7 +26,7 @@ export default function DebtBreakdown({ debt }) {
               </p>
               <p className="text-muted">
                 {it.kind === 'expense'
-                  ? `parte de ${name(it.owedBy)}, ${name(it.paidBy)} pagou`
+                  ? `${it.owedBy === currentUser.id ? 'sua parte' : `parte de ${name(it.owedBy)}`}, ${name(it.paidBy)} pagou`
                   : `${name(it.from)} pagou ${name(it.to)}`}
               </p>
             </div>
