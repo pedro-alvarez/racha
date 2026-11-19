@@ -8,7 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES } from '../lib/categories';
-import { SPLIT_TYPES, validateExpense } from '../lib/splitEngine';
+import { SPLIT_TYPES, validateExpense, fillRemainder } from '../lib/splitEngine';
 import { parseToCents, formatCents, firstName, maskCents } from '../lib/format';
 import Avatar from '../components/Avatar';
 
@@ -63,15 +63,18 @@ export default function AddExpensePage() {
     setParticipants(next);
   };
 
+  // Valores e %: quem ficou em branco divide o resto por igual (fillRemainder)
   const buildShares = () => {
-    const ids = [...participants];
-    if (splitType === SPLIT_TYPES.FIXED) {
-      return Object.fromEntries(ids.map((id) => [id, parseToCents(shareTexts[id])]));
-    }
-    if (splitType === SPLIT_TYPES.PERCENT) {
-      return Object.fromEntries(ids.map((id) => [id, parseFloat(shareTexts[id]) || 0]));
-    }
-    return {};
+    if (splitType === SPLIT_TYPES.EQUAL) return {};
+    const ids = members.map((m) => m.id).filter((id) => participants.has(id));
+    const filled = {};
+    ids.forEach((id) => {
+      const text = (shareTexts[id] ?? '').trim();
+      if (!text) return;
+      filled[id] =
+        splitType === SPLIT_TYPES.FIXED ? parseToCents(text) : parseFloat(text.replace(',', '.')) || 0;
+    });
+    return fillRemainder(splitType, amount, ids, filled);
   };
 
   const handleSubmit = async (e) => {
@@ -136,8 +139,14 @@ export default function AddExpensePage() {
   const inputCls =
     'w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm placeholder:text-muted focus:outline-none focus:border-accent/60';
 
-  const fixedSum = [...participants].reduce((acc, id) => acc + parseToCents(shareTexts[id]), 0);
-  const percentSum = [...participants].reduce((acc, id) => acc + (parseFloat(shareTexts[id]) || 0), 0);
+  const autoShares = buildShares();
+  const isBlank = (id) => !(shareTexts[id] ?? '').trim();
+  const autoLabel = (id) =>
+    splitType === SPLIT_TYPES.FIXED
+      ? centsToText(autoShares[id] ?? 0)
+      : String(autoShares[id] ?? 0).replace('.', ',');
+  const fixedSum = Object.values(autoShares).reduce((acc, v) => acc + v, 0);
+  const percentSum = Math.round(Object.values(autoShares).reduce((acc, v) => acc + v, 0) * 100) / 100;
 
   return (
     <div className="pt-4 md:pt-0">
@@ -252,7 +261,7 @@ export default function AddExpensePage() {
                       <input
                         inputMode="decimal"
                         className="w-full bg-white/5 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-sm text-right focus:outline-none focus:border-accent/60"
-                        placeholder="0"
+                        placeholder={isBlank(m.id) ? autoLabel(m.id) : '0'}
                         value={shareTexts[m.id] ?? ''}
                         onChange={(e) => setShareTexts({ ...shareTexts, [m.id]: e.target.value })}
                       />
@@ -266,6 +275,11 @@ export default function AddExpensePage() {
             })}
           </ul>
 
+          {splitType !== SPLIT_TYPES.EQUAL && (
+            <p className="mt-2 text-xs text-muted">
+              Preencha só quem paga diferente. Quem ficar em branco divide o resto por igual.
+            </p>
+          )}
           {splitType === SPLIT_TYPES.FIXED && (
             <p className={`mt-2 text-xs ${fixedSum === amount ? 'text-positive' : 'text-muted'}`}>
               Soma: {formatCents(fixedSum)} de {formatCents(amount)}
@@ -273,7 +287,7 @@ export default function AddExpensePage() {
           )}
           {splitType === SPLIT_TYPES.PERCENT && (
             <p className={`mt-2 text-xs ${Math.abs(percentSum - 100) < 0.01 ? 'text-positive' : 'text-muted'}`}>
-              Soma: {percentSum}% de 100%
+              Soma: {String(percentSum).replace('.', ',')}% de 100%
             </p>
           )}
         </div>

@@ -68,6 +68,41 @@ export function computeShares(expense) {
  * Valida uma despesa antes de salvar.
  * Retorna { valid: boolean, error?: string }.
  */
+/**
+ * Completa uma divisão por valores ou por percentual: quem ficou sem valor
+ * (ausente em `filled`) divide igualmente o que sobrou do total.
+ * Valores em centavos (FIXED) ou em % com duas casas (PERCENT); o último
+ * em branco absorve o arredondamento, então a soma sempre fecha.
+ * Se o que foi preenchido já passa do total, os em branco ficam com 0 e a
+ * validação acusa a diferença.
+ *
+ * @returns {Object} { [participantId]: valor } para todos os participantes
+ */
+export function fillRemainder(splitType, amount, participants, filled) {
+  const blanks = participants.filter((id) => filled[id] == null);
+  const total = splitType === SPLIT_TYPES.PERCENT ? 100 : amount;
+  const used = participants.reduce((acc, id) => acc + (filled[id] ?? 0), 0);
+  const result = Object.fromEntries(participants.map((id) => [id, filled[id] ?? 0]));
+  const rest = total - used;
+  if (blanks.length === 0 || rest <= 0) return result;
+
+  if (splitType === SPLIT_TYPES.PERCENT) {
+    const each = Math.floor((rest / blanks.length) * 100) / 100;
+    blanks.forEach((id, i) => {
+      result[id] = i === blanks.length - 1 ? Math.round((rest - each * (blanks.length - 1)) * 100) / 100 : each;
+    });
+    return result;
+  }
+
+  const base = Math.floor(rest / blanks.length);
+  let remainder = rest - base * blanks.length;
+  blanks.forEach((id) => {
+    result[id] = base + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder -= 1;
+  });
+  return result;
+}
+
 export function validateExpense(expense) {
   const { amount, splitType = SPLIT_TYPES.EQUAL, participants = [], shares = {}, paidBy } = expense;
 
