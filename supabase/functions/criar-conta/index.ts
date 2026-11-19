@@ -2,8 +2,9 @@
  * Edge Function "criar-conta": cadastro aberto pela tela inicial, sem e-mail.
  *
  * Cria o login já confirmado (admin API), então a pessoa entra na hora com
- * a senha que escolheu. O gatilho handle_new_user cria o perfil com
- * approved = false: ela fica na tela de espera até o admin aprovar.
+ * a senha que escolheu. Depois do login, o app chama complete_onboarding, que
+ * cria o perfil com approved = false: ela fica na tela de espera até o admin
+ * aprovar.
  *
  * Quem foi convidado e nunca abriu o link do e-mail já tem um login pendente;
  * nesse caso o login é reaproveitado (senha + nome) em vez de duplicado.
