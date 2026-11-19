@@ -63,6 +63,8 @@ export default function ProfilePage() {
     try {
       const url = await dataService.uploadAvatar(userId, file);
       setForm((f) => ({ ...f, photo: url }));
+      // grava a foto já, para todo mundo ver mesmo sem clicar em "Salvar"
+      await updateUser(userId, { photo: url });
     } catch (err) {
       setUploadError(err.message);
     } finally {

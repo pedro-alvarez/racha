@@ -86,18 +86,13 @@ export function fillRemainder(splitType, amount, participants, filled) {
   const rest = total - used;
   if (blanks.length === 0 || rest <= 0) return result;
 
-  if (splitType === SPLIT_TYPES.PERCENT) {
-    const each = Math.floor((rest / blanks.length) * 100) / 100;
-    blanks.forEach((id, i) => {
-      result[id] = i === blanks.length - 1 ? Math.round((rest - each * (blanks.length - 1)) * 100) / 100 : each;
-    });
-    return result;
-  }
-
-  const base = Math.floor(rest / blanks.length);
-  let remainder = rest - base * blanks.length;
+  // % trabalha em centésimos para distribuir as sobras como os centavos
+  const scale = splitType === SPLIT_TYPES.PERCENT ? 100 : 1;
+  const units = Math.round(rest * scale);
+  const base = Math.floor(units / blanks.length);
+  let remainder = units - base * blanks.length;
   blanks.forEach((id) => {
-    result[id] = base + (remainder > 0 ? 1 : 0);
+    result[id] = (base + (remainder > 0 ? 1 : 0)) / scale;
     if (remainder > 0) remainder -= 1;
   });
   return result;

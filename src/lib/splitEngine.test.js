@@ -155,6 +155,7 @@ describe('fillRemainder', () => {
     const shares = fillRemainder(SPLIT_TYPES.PERCENT, 9000, quatro, { pedro: 50 });
     expect(shares.pedro).toBe(50);
     expect(shares.akira + shares.c + shares.d).toBeCloseTo(50, 5);
+    expect([shares.akira, shares.c, shares.d]).toEqual([16.67, 16.67, 16.66]);
     expect(validateExpense({ amount: 9000, paidBy: 'pedro', splitType: SPLIT_TYPES.PERCENT, participants: quatro, shares }).valid).toBe(true);
   });
 
