@@ -212,7 +212,15 @@ export function pairwiseDebts(expenses = [], payments = []) {
   }
   for (const p of payments) {
     // pagamento de "from" para "to" diminui a dívida de from com to
-    add(p.from, p.to, -p.amount, { kind: 'payment', id: p.id, date: p.createdAt, from: p.from, to: p.to });
+    add(p.from, p.to, -p.amount, {
+      kind: 'payment',
+      id: p.id,
+      date: p.createdAt,
+      from: p.from,
+      to: p.to,
+      note: p.note ?? '',
+      expenseIds: p.expenseIds ?? [],
+    });
   }
 
   const result = [];
