@@ -3,8 +3,7 @@
  *
  * Autenticação real (e-mail/senha + link mágico) e dados salvos na nuvem
  * (Postgres com Row Level Security). Os componentes não importam este
- * arquivo direto: tudo passa por dataService.js, que escolhe entre esta
- * implementação e a do modo demonstração (mockService.js).
+ * arquivo direto: tudo passa por dataService.js.
  *
  * Convenções mantidas do app:
  * - valores monetários em CENTAVOS (inteiros)

@@ -1,31 +1,17 @@
 /**
  * dataService.js - camada de acesso a dados (ÚNICO ponto de I/O do app).
  *
- * Os componentes só conhecem este arquivo. Ele encaminha cada chamada para
- * uma de duas implementações com exatamente a mesma interface:
- *
- * - supabaseService.js → app real: login de verdade e dados no Postgres;
- * - mockService.js     → modo demonstração: dados fictícios (seedData.js)
- *                        guardados só no navegador, sem login nem cadastro.
- *
- * Qual delas responde é decidido a cada chamada: se há uma sessão demo
- * ativa (botão "Explorar o modo demonstração" no login), vai pro mock.
+ * Os componentes só conhecem este arquivo, que encaminha cada chamada para
+ * supabaseService.js (login de verdade e dados no Postgres). Trocar de
+ * backend no futuro significa mexer só aqui, sem tocar nas telas.
  */
 
 import * as real from './supabaseService';
-import * as mock from './mockService';
 
-const service = () => (mock.isActive() ? mock : real);
 const route =
   (name) =>
   (...args) =>
-    service()[name](...args);
-
-/* ---------------- Modo demonstração ---------------- */
-
-export const isDemoMode = () => mock.isActive();
-export const enterDemo = () => mock.enter();
-export const resetDemo = () => mock.reset();
+    real[name](...args);
 
 /* ---------------- Auth ---------------- */
 
