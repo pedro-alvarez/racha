@@ -12,6 +12,7 @@ import { ExpenseModalProvider } from './context/ExpenseModalContext';
 import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
 import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
 import OnboardingPage from './pages/OnboardingPage';
 import TripMembersPage from './pages/TripMembersPage';
 import OverviewPage from './pages/OverviewPage';
@@ -38,6 +39,7 @@ export default function App() {
         <ExpenseModalProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/criar-conta" element={<SignUpPage />} />
           <Route path="/bem-vindo" element={<OnboardingPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<OverviewPage />} />
