@@ -14,7 +14,7 @@ import { formatCentsAbs, formatDate, firstName, maskCents, parseToCents } from '
 import Avatar from './Avatar';
 
 export default function PaymentModal({ transfer, tripId, onClose }) {
-  const { userById, currentUser, settleDebt, paymentsByTrip } = useApp();
+  const { userById, currentUser, settleDebt, confirmPayment, paymentsByTrip } = useApp();
   const [mode, setMode] = useState('all');
   const [selected, setSelected] = useState(new Set());
   const [customText, setCustomText] = useState('');
@@ -27,19 +27,36 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
   const to = userById(transfer.to);
   const iAmReceiver = transfer.to === currentUser?.id;
 
-  // despesas desta dívida que ainda não foram quitadas por um pagamento
-  // (confirmado ou aguardando confirmação) de quem deve para quem recebe
-  const paidIds = new Set(
-    (paymentsByTrip?.[tripId] ?? [])
-      .filter((p) => p.from === transfer.from && p.to === transfer.to)
-      .flatMap((p) => p.expenseIds ?? [])
+  // pagamentos de quem deve para quem recebe: os confirmados já saíram da
+  // dívida; os pendentes ainda não, mas não podem ser pagos de novo
+  const between = (paymentsByTrip?.[tripId] ?? []).filter((p) => p.from === transfer.from && p.to === transfer.to);
+  const pending = between.filter((p) => p.status === 'pending');
+  const pendingSum = pending.reduce((s, p) => s + p.amount, 0);
+  const confirmedIds = new Set(between.filter((p) => p.status !== 'pending').flatMap((p) => p.expenseIds ?? []));
+  const pendingIds = new Set(pending.flatMap((p) => p.expenseIds ?? []));
+  const nameOf = (id) => (id === currentUser?.id ? 'você' : firstName(userById(id).name));
+  const descriptionOf = Object.fromEntries((transfer.items ?? []).map((it) => [it.id, it.description]));
+
+  // o que ainda falta pagar, descontando o que já foi registrado e aguarda confirmação
+  const open = Math.max(0, transfer.amount - pendingSum);
+  const expenseRows = (transfer.items ?? []).filter(
+    (it) => it.kind === 'expense' && it.amount > 0 && it.owedBy === transfer.from && !confirmedIds.has(it.id)
   );
-  const payable = (transfer.items ?? []).filter(
-    (it) => it.kind === 'expense' && it.amount > 0 && it.owedBy === transfer.from && !paidIds.has(it.id)
-  );
+  const payable = expenseRows.filter((it) => !pendingIds.has(it.id));
   const selectedSum = payable.filter((it) => selected.has(it.id)).reduce((s, it) => s + it.amount, 0);
   const customAmount = parseToCents(customText);
-  const amount = mode === 'all' ? transfer.amount : mode === 'expenses' ? selectedSum : customAmount;
+  const amount = mode === 'all' ? open : mode === 'expenses' ? selectedSum : customAmount;
+
+  const handleConfirmPending = async (paymentId) => {
+    setSaving(true);
+    try {
+      await confirmPayment(paymentId);
+      onClose();
+    } catch (err) {
+      setSaving(false);
+      setError(err.message);
+    }
+  };
 
   const toggleExpense = (id) => {
     const next = new Set(selected);
@@ -67,8 +84,8 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
     setError('');
     if (mode === 'expenses' && selected.size === 0) return setError('Escolha ao menos uma despesa.');
     if (amount <= 0) return setError('Informe o valor do pagamento.');
-    if (mode === 'custom' && amount > transfer.amount)
-      return setError(`O valor passa do total da dívida (${formatCentsAbs(transfer.amount)}).`);
+    if (mode === 'custom' && amount > open)
+      return setError(`O valor passa do que falta pagar (${formatCentsAbs(open)}).`);
     setSaving(true);
     try {
       await settleDebt(tripId, {
@@ -122,6 +139,42 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
           </div>
         </div>
 
+        {/* já registrado, aguardando quem recebe confirmar */}
+        {pending.length > 0 && (
+          <div className="card-flat p-4 mt-5 border-amber-400/25">
+            <p className="label-caps text-amber-300">Aguardando confirmação</p>
+            <ul className="mt-2 space-y-2.5">
+              {pending.map((p) => (
+                <li key={p.id} className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold">{formatCentsAbs(p.amount)}</p>
+                    <p className="text-[11px] text-muted truncate">
+                      {nameOf(p.from)} pagou {nameOf(p.to)}
+                      {p.expenseIds?.length
+                        ? `: ${p.expenseIds.map((id) => descriptionOf[id] ?? 'despesa').join(', ')}`
+                        : ''}
+                    </p>
+                  </div>
+                  {iAmReceiver ? (
+                    <button
+                      onClick={() => handleConfirmPending(p.id)}
+                      disabled={saving}
+                      className="px-3 py-2 rounded-xl bg-positive/15 text-positive text-xs font-bold shrink-0 disabled:opacity-50"
+                    >
+                      Confirmar
+                    </button>
+                  ) : (
+                    <p className="text-[11px] text-amber-300 shrink-0">falta {nameOf(p.to)} confirmar</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-[11px] text-muted">
+              Esse valor ainda conta na dívida até ser confirmado. Falta pagar {formatCentsAbs(open)}.
+            </p>
+          </div>
+        )}
+
         {/* quanto pagar */}
         <div className="mt-5 flex rounded-full bg-white/5 p-1">
           {[
@@ -147,18 +200,22 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
 
         {mode === 'expenses' && (
           <div className="mt-3">
-            {payable.length === 0 ? (
+            {expenseRows.length === 0 ? (
               <p className="text-sm text-muted text-center py-2">Não há despesas em aberto nesta dívida.</p>
             ) : (
               <ul className="space-y-2">
-                {payable.map((it) => {
+                {expenseRows.map((it) => {
                   const on = selected.has(it.id);
+                  const waiting = pendingIds.has(it.id);
                   return (
                     <li key={it.id}>
                       <button
                         type="button"
-                        onClick={() => toggleExpense(it.id)}
-                        className={`w-full card-flat p-3 flex items-center gap-3 text-left transition ${on ? 'border-accent/50' : ''}`}
+                        onClick={() => !waiting && toggleExpense(it.id)}
+                        disabled={waiting}
+                        className={`w-full card-flat p-3 flex items-center gap-3 text-left transition ${on ? 'border-accent/50' : ''} ${
+                          waiting ? 'opacity-60' : ''
+                        }`}
                       >
                         <span
                           className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${on ? 'bg-accent' : 'bg-white/10'}`}
@@ -170,6 +227,7 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
                           <span className="block text-[11px] text-muted">
                             {formatDate(String(it.date).slice(0, 10))} · parte de{' '}
                             {transfer.from === currentUser?.id ? 'você' : firstName(from.name)}
+                            {waiting && <span className="text-amber-300"> · paga, aguardando confirmação</span>}
                           </span>
                         </span>
                         <span className="text-sm font-bold">{formatCentsAbs(it.amount)}</span>
