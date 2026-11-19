@@ -168,3 +168,17 @@ describe('fillRemainder', () => {
     expect(shares).toEqual({ a: 1500, b: 0 });
   });
 });
+
+describe('computeBalances com despesa sem participantes', () => {
+  it('não credita o pagador quando ninguém divide a despesa', () => {
+    const balances = computeBalances(
+      [
+        { amount: 28697, paidBy: 'miguel', splitType: SPLIT_TYPES.PERCENT, participants: [], shares: {} },
+        { amount: 8300, paidBy: 'andre', splitType: SPLIT_TYPES.EQUAL, participants: ['andre', 'pedro'] },
+      ],
+      [],
+      ['miguel', 'andre', 'pedro']
+    );
+    expect(balances).toEqual({ miguel: 0, andre: 4150, pedro: -4150 });
+  });
+});

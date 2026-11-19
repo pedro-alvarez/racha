@@ -155,7 +155,10 @@ export function computeBalances(expenses = [], payments = [], memberIds = []) {
 
   for (const expense of expenses) {
     const shares = computeShares(expense);
-    balances[expense.paidBy] = (balances[expense.paidBy] ?? 0) + expense.amount;
+    // o pagador recebe a soma das partes (= o total numa despesa válida); uma
+    // despesa sem participantes não gera crédito sem ninguém devendo
+    const owed = Object.values(shares).reduce((s, v) => s + v, 0);
+    balances[expense.paidBy] = (balances[expense.paidBy] ?? 0) + owed;
     for (const [memberId, share] of Object.entries(shares)) {
       balances[memberId] = (balances[memberId] ?? 0) - share;
     }

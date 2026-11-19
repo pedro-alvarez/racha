@@ -335,7 +335,11 @@ export async function updateExpense(expenseId, expense, changes = []) {
     .eq('id', expenseId);
   if (error) fail(error);
 
-  // troca os participantes/partes
+  // troca os participantes/partes (guardando os antigos para desfazer se der erro)
+  const { data: oldRows } = await supabase
+    .from('expense_participants')
+    .select('expense_id, user_id, share')
+    .eq('expense_id', expenseId);
   const { error: delError } = await supabase
     .from('expense_participants')
     .delete()
@@ -347,7 +351,10 @@ export async function updateExpense(expenseId, expense, changes = []) {
     share: expense.shares?.[userId] ?? null,
   }));
   const { error: insError } = await supabase.from('expense_participants').insert(rows);
-  if (insError) fail(insError);
+  if (insError) {
+    if (oldRows?.length) await supabase.from('expense_participants').insert(oldRows);
+    fail(insError);
+  }
 
   // registra o histórico
   if (changes.length > 0) {
@@ -402,7 +409,11 @@ export async function addExpense(tripId, expense) {
     share: expense.shares?.[userId] ?? null,
   }));
   const { error: partsError } = await supabase.from('expense_participants').insert(rows);
-  if (partsError) fail(partsError);
+  if (partsError) {
+    // não deixa uma despesa sem participantes para trás
+    await supabase.from('expenses').delete().eq('id', record.id);
+    fail(partsError);
+  }
 
   return mapExpense({
     ...record,
