@@ -83,6 +83,13 @@ export function dayLabel(iso) {
 }
 
 /** Hora local HH:MM. */
+/** Data de hoje no fuso do aparelho, no formato do <input type="date"> (AAAA-MM-DD). */
+export function todayISO() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }

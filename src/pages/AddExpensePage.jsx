@@ -9,7 +9,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES } from '../lib/categories';
 import { SPLIT_TYPES, validateExpense, fillRemainder, computeShares } from '../lib/splitEngine';
-import { parseToCents, formatCents, firstName, maskCents } from '../lib/format';
+import { parseToCents, formatCents, formatDateFull, firstName, maskCents, todayISO } from '../lib/format';
 import Avatar from '../components/Avatar';
 
 const SPLIT_OPTIONS = [
@@ -34,6 +34,7 @@ export default function AddExpensePage() {
     : null;
 
   const [description, setDescription] = useState(original?.description ?? '');
+  const [date, setDate] = useState(original?.date ?? todayISO());
   const [amountText, setAmountText] = useState(original ? maskCents(String(original.amount)) : '');
   const [paidBy, setPaidBy] = useState(original?.paidBy ?? currentUser?.id);
   const [category, setCategory] = useState(original?.category ?? 'comida');
@@ -81,9 +82,12 @@ export default function AddExpensePage() {
     e.preventDefault();
     setError('');
     if (!description.trim()) return setError('Descreva a despesa.');
+    if (!date) return setError('Informe a data da despesa.');
+    if (amount <= 0) return setError('Informe o valor da despesa.');
 
     const expense = {
       description: description.trim(),
+      date,
       amount,
       paidBy,
       category,
@@ -123,6 +127,8 @@ export default function AddExpensePage() {
     };
     if (oldE.description !== newE.description)
       changes.push({ field: 'descrição', old: oldE.description, new: newE.description });
+    if (oldE.date !== newE.date)
+      changes.push({ field: 'data', old: formatDateFull(oldE.date), new: formatDateFull(newE.date) });
     if (oldE.amount !== newE.amount)
       changes.push({ field: 'valor', old: formatCents(oldE.amount), new: formatCents(newE.amount) });
     if (oldE.category !== newE.category)
@@ -162,7 +168,7 @@ export default function AddExpensePage() {
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
-          <label className="label-caps">Descrição</label>
+          <label className="label-caps">Descrição <span className="text-accent-bright">*</span></label>
           <input
             className={`${inputCls} mt-2`}
             placeholder="Ex.: Jantar no quiosque"
@@ -172,7 +178,18 @@ export default function AddExpensePage() {
         </div>
 
         <div>
-          <label className="label-caps">Valor</label>
+          <label className="label-caps">Data <span className="text-accent-bright">*</span></label>
+          <input
+            type="date"
+            required
+            className={`${inputCls} mt-2 [color-scheme:dark]`}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="label-caps">Valor <span className="text-accent-bright">*</span></label>
           <div className="relative mt-2">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-semibold">R$</span>
             <input

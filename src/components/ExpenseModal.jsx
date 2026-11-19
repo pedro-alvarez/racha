@@ -99,11 +99,11 @@ export default function ExpenseModal({ expense, onClose }) {
         <div className="mt-4 grid grid-cols-2 gap-2.5">
           <div className="card-flat p-3.5">
             <p className="label-caps flex items-center gap-1.5"><CalendarDays size={12} /> Dia</p>
-            <p className="mt-1 text-sm font-bold">{formatDateFull(expense.createdAt)}</p>
+            <p className="mt-1 text-sm font-bold">{formatDateFull(expense.date ?? expense.createdAt)}</p>
           </div>
           <div className="card-flat p-3.5">
-            <p className="label-caps flex items-center gap-1.5"><Clock size={12} /> Hora</p>
-            <p className="mt-1 text-sm font-bold">{formatTime(expense.createdAt)}</p>
+            <p className="label-caps flex items-center gap-1.5"><Clock size={12} /> Registrada</p>
+            <p className="mt-1 text-sm font-bold">{new Date(expense.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às {formatTime(expense.createdAt)}</p>
           </div>
         </div>
         <div className="card-flat p-3.5 mt-2.5 flex items-center gap-3">

@@ -47,6 +47,7 @@ const mapExpense = (row) => {
     id: row.id,
     tripId: row.trip_id,
     description: row.description,
+    date: row.expense_date,
     category: row.category,
     amount: row.amount,
     paidBy: row.paid_by,
@@ -325,6 +326,7 @@ export async function updateExpense(expenseId, expense, changes = []) {
     .from('expenses')
     .update({
       description: expense.description,
+      expense_date: expense.date,
       category: expense.category ?? 'outros',
       amount: expense.amount,
       paid_by: expense.paidBy,
@@ -384,6 +386,7 @@ export async function addExpense(tripId, expense) {
     .insert({
       trip_id: tripId,
       description: expense.description,
+      expense_date: expense.date,
       category: expense.category ?? 'outros',
       amount: expense.amount,
       paid_by: expense.paidBy,

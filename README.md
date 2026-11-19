@@ -76,7 +76,7 @@ dependências, roda `npm run build` e publica a pasta `dist/`.
 
 O esquema está em `supabase/`. Num projeto Supabase novo, rode no SQL Editor,
 nesta ordem: `schema.sql` → `upgrade-v2.sql` → `upgrade-v3.sql` →
-`upgrade-v4.sql` → `upgrade-v5.sql` → `upgrade-v6.sql`. Os modelos de e-mail de convite estão em
+`upgrade-v4.sql` → `upgrade-v5.sql` → `upgrade-v6.sql` → `upgrade-v7.sql`. Os modelos de e-mail de convite estão em
 `supabase/email-templates.md`. Depois, troque a URL e a chave em
 `src/lib/supabaseClient.js`.
 
