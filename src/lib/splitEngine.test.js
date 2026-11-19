@@ -155,7 +155,11 @@ describe('fillRemainder', () => {
     const shares = fillRemainder(SPLIT_TYPES.PERCENT, 9000, quatro, { pedro: 50 });
     expect(shares.pedro).toBe(50);
     expect(shares.akira + shares.c + shares.d).toBeCloseTo(50, 5);
-    expect([shares.akira, shares.c, shares.d]).toEqual([16.67, 16.67, 16.66]);
+    expect(shares.akira).toBe(shares.c);
+    expect(shares.c).toBe(shares.d);
+    const cents = computeShares({ amount: 28697, splitType: SPLIT_TYPES.PERCENT, participants: quatro, shares });
+    expect(Object.values(cents).reduce((s, v) => s + v, 0)).toBe(28697);
+    expect(Math.max(cents.akira, cents.c, cents.d) - Math.min(cents.akira, cents.c, cents.d)).toBeLessThanOrEqual(1);
     expect(validateExpense({ amount: 9000, paidBy: 'pedro', splitType: SPLIT_TYPES.PERCENT, participants: quatro, shares }).valid).toBe(true);
   });
 

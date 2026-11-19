@@ -46,17 +46,20 @@ export function computeShares(expense) {
   }
 
   if (splitType === SPLIT_TYPES.PERCENT) {
-    let allocated = 0;
+    // maiores restos: cada um recebe o piso do valor exato e os centavos que
+    // sobram vão, um a um, para quem tem a maior fração. Percentuais iguais
+    // resultam em valores iguais (diferença máxima de 1 centavo).
+    const exact = participants.map((id) => (amount * (shares[id] ?? 0)) / 100);
+    const floors = exact.map((v) => Math.floor(v + 1e-9));
+    let leftover = amount - floors.reduce((s, v) => s + v, 0);
+    const order = exact
+      .map((v, i) => ({ i, frac: v - floors[i] }))
+      .sort((x, y) => y.frac - x.frac || x.i - y.i);
+    for (let k = 0; leftover > 0 && participants.length > 0; k++, leftover--) {
+      floors[order[k % order.length].i] += 1;
+    }
     participants.forEach((id, i) => {
-      const pct = shares[id] ?? 0;
-      let value;
-      if (i === participants.length - 1) {
-        value = amount - allocated; // último absorve arredondamento
-      } else {
-        value = Math.round((amount * pct) / 100);
-      }
-      allocated += value;
-      result[id] = value;
+      result[id] = floors[i];
     });
     return result;
   }
@@ -71,8 +74,8 @@ export function computeShares(expense) {
 /**
  * Completa uma divisão por valores ou por percentual: quem ficou sem valor
  * (ausente em `filled`) divide igualmente o que sobrou do total.
- * Valores em centavos (FIXED) ou em % com duas casas (PERCENT); o último
- * em branco absorve o arredondamento, então a soma sempre fecha.
+ * Valores em centavos (FIXED): os centavos que sobram vão um a um, então a
+ * soma fecha. Em % (PERCENT), todos em branco recebem o mesmo percentual.
  * Se o que foi preenchido já passa do total, os em branco ficam com 0 e a
  * validação acusa a diferença.
  *
@@ -86,13 +89,20 @@ export function fillRemainder(splitType, amount, participants, filled) {
   const rest = total - used;
   if (blanks.length === 0 || rest <= 0) return result;
 
-  // % trabalha em centésimos para distribuir as sobras como os centavos
-  const scale = splitType === SPLIT_TYPES.PERCENT ? 100 : 1;
-  const units = Math.round(rest * scale);
-  const base = Math.floor(units / blanks.length);
-  let remainder = units - base * blanks.length;
+  // %: todos em branco recebem o mesmo percentual (6 casas); os centavos
+  // são repartidos por computeShares
+  if (splitType === SPLIT_TYPES.PERCENT) {
+    const each = Math.round((rest / blanks.length) * 1e6) / 1e6;
+    blanks.forEach((id) => {
+      result[id] = each;
+    });
+    return result;
+  }
+
+  const base = Math.floor(rest / blanks.length);
+  let remainder = rest - base * blanks.length;
   blanks.forEach((id) => {
-    result[id] = (base + (remainder > 0 ? 1 : 0)) / scale;
+    result[id] = base + (remainder > 0 ? 1 : 0);
     if (remainder > 0) remainder -= 1;
   });
   return result;
