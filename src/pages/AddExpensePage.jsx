@@ -8,7 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES } from '../lib/categories';
-import { SPLIT_TYPES, validateExpense, fillRemainder } from '../lib/splitEngine';
+import { SPLIT_TYPES, validateExpense, fillRemainder, computeShares } from '../lib/splitEngine';
 import { parseToCents, formatCents, firstName, maskCents } from '../lib/format';
 import Avatar from '../components/Avatar';
 
@@ -145,6 +145,11 @@ export default function AddExpensePage() {
     splitType === SPLIT_TYPES.FIXED
       ? centsToText(autoShares[id] ?? 0)
       : String(autoShares[id] ?? 0).replace('.', ',');
+  // no modo %, quanto cada um paga em reais
+  const percentCents =
+    splitType === SPLIT_TYPES.PERCENT
+      ? computeShares({ amount, splitType, participants: Object.keys(autoShares), shares: autoShares })
+      : {};
   const fixedSum = Object.values(autoShares).reduce((acc, v) => acc + v, 0);
   const percentSum = Math.round(Object.values(autoShares).reduce((acc, v) => acc + v, 0) * 100) / 100;
 
@@ -255,6 +260,9 @@ export default function AddExpensePage() {
                   <p className="flex-1 text-sm font-semibold truncate">{firstName(m.name)}</p>
                   {active && splitType === SPLIT_TYPES.EQUAL && participants.size > 0 && (
                     <p className="text-xs text-muted">{formatCents(Math.floor(amount / participants.size))}</p>
+                  )}
+                  {active && splitType === SPLIT_TYPES.PERCENT && amount > 0 && (
+                    <p className="text-xs text-muted">{formatCents(percentCents[m.id] ?? 0)}</p>
                   )}
                   {active && splitType !== SPLIT_TYPES.EQUAL && (
                     <div className="relative w-28">
