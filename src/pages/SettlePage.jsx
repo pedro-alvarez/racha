@@ -1,7 +1,8 @@
 /**
- * Acerto Final - dívidas diretas (cada um paga a quem pagou a despesa dele):
- * card de total pendente, transações avatar → avatar com a justificativa
- * ("de onde vem") e "marcar pago" (com a chave Pix do credor).
+ * Acerto Final - dívidas diretas (cada um paga a quem pagou a despesa dele).
+ * Aba "Suas" (padrão): o que você deve e tem a receber; aba "Todos": a viagem
+ * inteira, para consulta. Cada transação mostra a justificativa ("de onde
+ * vem") e, se você paga ou recebe (ou é admin), "marcar pago".
  */
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -22,10 +23,17 @@ export default function SettlePage() {
   const [busyId, setBusyId] = useState(null);
   const [shared, setShared] = useState(false);
   const [openKey, setOpenKey] = useState(null);
+  const [tab, setTab] = useState('mine');
 
   if (!trip) return null;
 
+  const isAdmin = currentUser.role === 'admin';
+  const involvesMe = (t) => t.from === currentUser.id || t.to === currentUser.id;
+  const mine = settlements.filter(involvesMe);
+  const shown = tab === 'mine' ? mine : settlements;
   const total = settlements.reduce((acc, t) => acc + t.amount, 0);
+  const iOwe = mine.filter((t) => t.from === currentUser.id).reduce((acc, t) => acc + t.amount, 0);
+  const owedToMe = mine.filter((t) => t.to === currentUser.id).reduce((acc, t) => acc + t.amount, 0);
   const displayName = (u) => (u.id === currentUser.id ? 'Você' : firstName(u.name));
 
   const handleConfirm = async (paymentId) => {
@@ -85,10 +93,43 @@ export default function SettlePage() {
       </div>
       <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Acerto Final</h1>
 
+      {/* abas: suas dívidas / todos */}
+      <div className="mt-5 flex rounded-full bg-white/5 p-1 w-fit">
+        {[
+          { id: 'mine', label: 'Suas' },
+          { id: 'all', label: 'Todos' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-5 py-1.5 rounded-full text-sm font-semibold transition ${
+              tab === t.id ? 'bg-accent text-white' : 'text-muted'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {/* Total pendente */}
-      <section className="mt-5 rounded-3xl p-6 bg-gradient-to-br from-accent to-accent-bright shadow-fab">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Total pendente</p>
-        <p className="mt-1.5 text-5xl font-extrabold tracking-tight">{formatCentsAbs(total)}</p>
+      <section className="mt-4 rounded-3xl p-6 bg-gradient-to-br from-accent to-accent-bright shadow-fab">
+        {tab === 'mine' ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Você deve</p>
+              <p className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight">{formatCentsAbs(iOwe)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Você tem a receber</p>
+              <p className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight">{formatCentsAbs(owedToMe)}</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Total pendente da viagem</p>
+            <p className="mt-1.5 text-5xl font-extrabold tracking-tight">{formatCentsAbs(total)}</p>
+          </>
+        )}
         <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-black/25 text-sm font-semibold">
           <ReceiptText size={15} />
           Cada um paga a quem pagou · {expenses.length} despesas
@@ -97,25 +138,29 @@ export default function SettlePage() {
 
       <div className="mt-7 flex items-center justify-between">
         <h2 className="text-lg font-bold">Transações</h2>
-        <span className="text-xs font-semibold text-muted">{settlements.length} transferências</span>
+        <span className="text-xs font-semibold text-muted">{shown.length} transferências</span>
       </div>
 
-      {settlements.length === 0 ? (
+      {shown.length === 0 ? (
         <div className="card-gradient p-8 mt-3 text-center">
           <p className="text-2xl">🎉</p>
-          <p className="mt-2 font-bold">Tudo acertado!</p>
-          <p className="text-sm text-muted mt-1">Ninguém deve nada nesta viagem.</p>
+          <p className="mt-2 font-bold">{tab === 'mine' ? 'Você está em dia!' : 'Tudo acertado!'}</p>
+          <p className="text-sm text-muted mt-1">
+            {tab === 'mine'
+              ? 'Você não deve nada e ninguém te deve nesta viagem.'
+              : 'Ninguém deve nada nesta viagem.'}
+          </p>
         </div>
       ) : (
         <ul className="mt-3 space-y-3">
-          {settlements.map((t, i) => {
+          {shown.map((t, i) => {
             const from = userById(t.from);
             const to = userById(t.to);
             const key = `${t.from}-${t.to}-${i}`;
             const isOpen = openKey === key;
-            const involvesMe = t.from === currentUser.id || t.to === currentUser.id;
+            const mineTransfer = involvesMe(t);
             return (
-              <li key={key} className={`card-flat p-5 ${involvesMe ? 'border-accent/30' : ''}`}>
+              <li key={key} className={`card-flat p-5 ${mineTransfer && tab === 'all' ? 'border-accent/30' : ''}`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex flex-col items-center gap-1.5 w-20">
                     <div className="relative">
@@ -155,14 +200,15 @@ export default function SettlePage() {
                 </button>
                 {isOpen && <DebtBreakdown debt={t} />}
 
-                <button
-                  onClick={() => setPayingTransfer(t)}
-                  disabled={false}
-                  className="mt-4 w-full py-2.5 rounded-2xl bg-positive/15 text-positive text-sm font-bold hover:bg-positive/25 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Check size={15} />
-                  Marcar como pago
-                </button>
+                {(mineTransfer || isAdmin) && (
+                  <button
+                    onClick={() => setPayingTransfer(t)}
+                    className="mt-4 w-full py-2.5 rounded-2xl bg-positive/15 text-positive text-sm font-bold hover:bg-positive/25 transition flex items-center justify-center gap-2"
+                  >
+                    <Check size={15} />
+                    Marcar como pago
+                  </button>
+                )}
               </li>
             );
           })}
