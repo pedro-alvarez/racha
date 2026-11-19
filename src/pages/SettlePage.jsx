@@ -1,29 +1,31 @@
 /**
- * Acerto Final - visão dinâmica do plano simplificado:
- * card de total pendente, transações avatar → avatar e "marcar pago"
- * (com a chave Pix do credor a um toque, via perfil).
+ * Acerto Final - dívidas diretas (cada um paga a quem pagou a despesa dele):
+ * card de total pendente, transações avatar → avatar com a justificativa
+ * ("de onde vem") e "marcar pago" (com a chave Pix do credor).
  */
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Share2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ReceiptText, Share2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import PaymentModal from '../components/PaymentModal';
 import { formatCentsAbs, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
+import DebtBreakdown from '../components/DebtBreakdown';
 
 export default function SettlePage() {
   const { tripId } = useParams();
   const { userById, currentUser, confirmPayment, declinePayment } = useApp();
-  const { trip, simplified, expenses, pendingPayments } = useTripSummary(tripId);
+  const { trip, settlements, expenses, pendingPayments } = useTripSummary(tripId);
   const navigate = useNavigate();
   const [payingTransfer, setPayingTransfer] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [shared, setShared] = useState(false);
+  const [openKey, setOpenKey] = useState(null);
 
   if (!trip) return null;
 
-  const total = simplified.reduce((acc, t) => acc + t.amount, 0);
+  const total = settlements.reduce((acc, t) => acc + t.amount, 0);
   const displayName = (u) => (u.id === currentUser.id ? 'Você' : firstName(u.name));
 
   const handleConfirm = async (paymentId) => {
@@ -46,7 +48,7 @@ export default function SettlePage() {
   };
 
   const handleShare = async () => {
-    const lines = simplified.map((t) => {
+    const lines = settlements.map((t) => {
       const from = userById(t.from);
       const to = userById(t.to);
       const pix = to.pix ? ` (Pix: ${to.pix.key})` : '';
@@ -88,17 +90,17 @@ export default function SettlePage() {
         <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Total pendente</p>
         <p className="mt-1.5 text-5xl font-extrabold tracking-tight">{formatCentsAbs(total)}</p>
         <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-black/25 text-sm font-semibold">
-          <Sparkles size={15} />
-          Dívidas simplificadas · {expenses.length} despesas
+          <ReceiptText size={15} />
+          Cada um paga a quem pagou · {expenses.length} despesas
         </div>
       </section>
 
       <div className="mt-7 flex items-center justify-between">
         <h2 className="text-lg font-bold">Transações</h2>
-        <span className="text-xs font-semibold text-muted">{simplified.length} transferências</span>
+        <span className="text-xs font-semibold text-muted">{settlements.length} transferências</span>
       </div>
 
-      {simplified.length === 0 ? (
+      {settlements.length === 0 ? (
         <div className="card-gradient p-8 mt-3 text-center">
           <p className="text-2xl">🎉</p>
           <p className="mt-2 font-bold">Tudo acertado!</p>
@@ -106,10 +108,11 @@ export default function SettlePage() {
         </div>
       ) : (
         <ul className="mt-3 space-y-3">
-          {simplified.map((t, i) => {
+          {settlements.map((t, i) => {
             const from = userById(t.from);
             const to = userById(t.to);
             const key = `${t.from}-${t.to}-${i}`;
+            const isOpen = openKey === key;
             const involvesMe = t.from === currentUser.id || t.to === currentUser.id;
             return (
               <li key={key} className={`card-flat p-5 ${involvesMe ? 'border-accent/30' : ''}`}>
@@ -142,6 +145,15 @@ export default function SettlePage() {
                     <p className="text-xs font-semibold truncate w-full text-center">{displayName(to)}</p>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => setOpenKey(isOpen ? null : key)}
+                  className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-semibold text-muted hover:text-white transition"
+                >
+                  {isOpen ? 'Esconder' : 'De onde vem esse valor?'}
+                  <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isOpen && <DebtBreakdown debt={t} />}
 
                 <button
                   onClick={() => setPayingTransfer(t)}

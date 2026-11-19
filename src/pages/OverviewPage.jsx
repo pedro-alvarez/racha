@@ -28,7 +28,7 @@ export default function OverviewPage() {
   }, [routeTripId, selectedTripId, setSelectedTripId]);
 
   const tripId = routeTripId ?? selectedTripId;
-  const { trip, simplified, pairwise, activity, myBalance } = useTripSummary(tripId);
+  const { trip, settlements, activity, myBalance } = useTripSummary(tripId);
 
   // mantém o chip da viagem ativa visível na faixa rolável
   useEffect(() => {
@@ -150,7 +150,7 @@ export default function OverviewPage() {
         </Link>
       )}
 
-      <SettlementPlan simplified={simplified} pairwise={pairwise} />
+      <SettlementPlan settlements={settlements} />
 
       <section className="mt-7">
         <div className="flex items-center justify-between">
