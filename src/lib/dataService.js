@@ -23,6 +23,12 @@ export const needsOnboarding = route('needsOnboarding');
 export const completeOnboarding = route('completeOnboarding');
 export const changePassword = route('changePassword');
 
+/** Avisos de mudança entre aparelhos (tempo real). */
+export function onRemoteChange(callback) {
+  return real.onRemoteChange(callback);
+}
+export const notifyChange = () => real.notifyChange();
+
 /** Login/logout reais (inclusive em outra aba) disparam o callback. */
 export function onAuthChange(callback) {
   return real.onAuthChange(callback);
