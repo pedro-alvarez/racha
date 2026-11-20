@@ -3,10 +3,11 @@
 import { Settings, Trash2, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AvatarStack from './AvatarStack';
+import PendingBell from './PendingBell';
 import { useApp } from '../context/AppContext';
 import { formatDateRange, tripTypeLabel } from '../lib/format';
 
-export default function TripHeader({ trip }) {
+export default function TripHeader({ trip, abrirPendencias = false, onAbriuPendencias }) {
   const { userById, currentUser, deleteTrip } = useApp();
   const navigate = useNavigate();
   const members = trip.members.map(userById);
@@ -22,7 +23,10 @@ export default function TripHeader({ trip }) {
 
   return (
     <header className="pt-4 md:pt-0">
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center gap-2">
+        {/* pendências: pagamentos para você confirmar */}
+        <PendingBell abrir={abrirPendencias} onAbriu={onAbriuPendencias} />
+        <span className="flex-1" />
         {isAdmin && (
           <button
             aria-label={isRole ? 'Apagar rolê' : 'Apagar viagem'}

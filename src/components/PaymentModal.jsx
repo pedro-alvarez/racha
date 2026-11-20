@@ -13,6 +13,7 @@ import { useApp } from '../context/AppContext';
 import { formatCentsAbs, formatDate, firstName, maskCents, parseToCents } from '../lib/format';
 import Avatar from './Avatar';
 import { expenseCoverage } from '../lib/splitEngine';
+import { chavePix, pixCopiaECola } from '../lib/pix';
 import * as dataService from '../lib/dataService';
 import { ReceiptLink, ReceiptPicker } from './Receipt';
 
@@ -24,6 +25,7 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
   const [note, setNote] = useState('');
   const [receipt, setReceipt] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -82,6 +84,21 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // Pix copia e cola com o valor já preenchido: cola no app do banco e paga
+  const pixCode =
+    to.pix?.key && amount > 0
+      ? pixCopiaECola({ key: chavePix(to.pix.type, to.pix.key), name: to.name, amount, info: 'Racha' })
+      : null;
+  const copyPixCode = async () => {
+    try {
+      await navigator.clipboard.writeText(pixCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2500);
+    } catch {
+      /* clipboard indisponível */
+    }
+  };
 
   const copyPix = async () => {
     try {
@@ -325,6 +342,23 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
               </div>
             ) : (
               <p className="mt-2 text-sm text-muted">Sem chave cadastrada. Combina com a pessoa por fora.</p>
+            )}
+            {pixCode && (
+              <>
+                <button
+                  onClick={copyPixCode}
+                  className={`mt-3 w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition ${
+                    copiedCode ? 'bg-positive/20 text-positive' : 'bg-white text-ink hover:bg-white/90'
+                  }`}
+                >
+                  {copiedCode ? <Check size={16} /> : <QrCode size={16} />}
+                  {copiedCode ? 'Pix copiado! Agora cole no banco' : `Copiar Pix copia e cola · ${formatCentsAbs(amount)}`}
+                </button>
+                <p className="mt-2 text-[11px] text-muted">
+                  No app do banco: Pix → Pix Copia e Cola → cole. A chave e o valor já vêm preenchidos. Depois volte aqui e
+                  toque em Pagar.
+                </p>
+              </>
             )}
           </div>
         )}
