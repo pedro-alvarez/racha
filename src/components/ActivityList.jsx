@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import Avatar from './Avatar';
 import { useApp } from '../context/AppContext';
 import { useExpenseModal } from '../context/ExpenseModalContext';
+import { Paperclip } from 'lucide-react';
 import { categoryOf, PAYMENT_ICON } from '../lib/categories';
 import { computeShares } from '../lib/splitEngine';
 import { formatCents, formatTime, firstName } from '../lib/format';
@@ -95,7 +96,10 @@ export function ActivityItem({ item }) {
     >
       <CategoryBubble item={item} payer={payer} onOpenProfile={() => navigate(`/perfil/${payer.id}`)} />
       <div className="flex-1 min-w-0">
-        <p className="font-semibold truncate">{item.description}</p>
+        <p className="font-semibold truncate">
+          {item.description}
+          {item.receiptPath && <Paperclip size={12} className="inline ml-1.5 -mt-0.5 text-muted" aria-label="tem anexo" />}
+        </p>
         <p className="text-xs text-muted mt-0.5">
           {item.tripName ? `${item.tripName} · ` : ''}
           {iPaid ? 'Você pagou' : `${firstName(payer.name)} pagou`} {formatCents(item.amount)}
