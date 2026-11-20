@@ -124,7 +124,8 @@ export default function AddExpensePage() {
   function buildChanges(oldE, newE) {
     const changes = [];
     const catLabel = (k) => CATEGORIES[k]?.label ?? k;
-    const who = (id) => (id === currentUser.id ? 'Você' : firstName(userById(id).name));
+    // nome de verdade: o histórico é lido por todos, então "Você" ficaria errado para os outros
+    const who = (id) => firstName(userById(id).name);
     const splitDesc = (e) => {
       const labels = { equal: 'igual', fixed: 'valores fixos', percent: 'percentual' };
       return `${labels[e.splitType] ?? e.splitType} · ${e.participants.length} pessoas`;
