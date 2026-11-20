@@ -165,6 +165,11 @@ export default function AddExpensePage() {
     splitType === SPLIT_TYPES.PERCENT
       ? computeShares({ amount, splitType, participants: Object.keys(autoShares), shares: autoShares })
       : {};
+  // divisão igual: parte exata de cada um (centavos que sobram vão para os primeiros, na mesma ordem do app)
+  const equalCents =
+    splitType === SPLIT_TYPES.EQUAL
+      ? computeShares({ amount, splitType, participants: [...participants].sort() })
+      : {};
   const fixedSum = Object.values(autoShares).reduce((acc, v) => acc + v, 0);
   const percentSum = Math.round(Object.values(autoShares).reduce((acc, v) => acc + v, 0) * 100) / 100;
 
@@ -284,27 +289,42 @@ export default function AddExpensePage() {
             {members.map((m) => {
               const active = participants.has(m.id);
               return (
-                <li key={m.id} className={`card-flat p-3 flex items-center gap-3 ${active ? '' : 'opacity-45'}`}>
-                  <button
-                    type="button"
-                    onClick={() => toggleParticipant(m.id)}
-                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                <li
+                  key={m.id}
+                  role="checkbox"
+                  aria-checked={active}
+                  aria-label={`Incluir ${m.name}`}
+                  tabIndex={0}
+                  onClick={() => toggleParticipant(m.id)}
+                  onKeyDown={(e) => {
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      toggleParticipant(m.id);
+                    }
+                  }}
+                  className={`card-flat p-3 flex items-center gap-3 cursor-pointer select-none transition active:scale-[0.99] hover:bg-white/5 ${
+                    active ? 'border-accent/30' : 'opacity-45'
+                  }`}
+                >
+                  <span
+                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition ${
                       active ? 'bg-accent' : 'bg-white/10'
                     }`}
-                    aria-label={`Incluir ${m.name}`}
                   >
                     {active && <Check size={13} />}
-                  </button>
+                  </span>
                   <Avatar user={m} size="sm" />
                   <p className="flex-1 text-sm font-semibold truncate">{firstName(m.name)}</p>
                   {active && splitType === SPLIT_TYPES.EQUAL && participants.size > 0 && (
-                    <p className="text-xs text-muted">{formatCents(Math.floor(amount / participants.size))}</p>
+                    <p className="text-xs text-muted">{formatCents(equalCents[m.id] ?? 0)}</p>
                   )}
                   {active && splitType === SPLIT_TYPES.PERCENT && amount > 0 && (
                     <p className="text-xs text-muted">{formatCents(percentCents[m.id] ?? 0)}</p>
                   )}
                   {active && splitType !== SPLIT_TYPES.EQUAL && (
-                    <div className="relative w-28">
+                    // digitar o valor não marca/desmarca a pessoa
+                    <div className="relative w-28" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <input
                         inputMode="decimal"
                         className="w-full bg-white/5 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-sm text-right focus:outline-none focus:border-accent/60"
