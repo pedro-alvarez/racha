@@ -3,7 +3,7 @@
  * Toda mutação passa pelo dataService; os componentes nunca tocam em
  * localStorage nem sabem de onde os dados vêm.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import * as dataService from '../lib/dataService';
 
 const AppContext = createContext(null);
@@ -20,7 +20,8 @@ export function AppProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-  const refreshAll = useCallback(async () => {
+  // carrega tudo do banco (sem avisar ninguém)
+  const load = useCallback(async () => {
     const user = await dataService.getCurrentUser();
 
     // Sem sessão: limpa tudo (o Layout redireciona para /login)
@@ -69,12 +70,72 @@ export function AppProvider({ children }) {
     setLoading(false);
   }, []);
 
+  // depois de uma mudança feita aqui: avisa os outros aparelhos e recarrega
+  const refreshAll = useCallback(async () => {
+    dataService.notifyChange();
+    await load();
+  }, [load]);
+
+  /* ---------- tempo real ----------
+   * 1) aviso de outro aparelho (Supabase Realtime) recarrega em segundo plano;
+   * 2) voltar para o app (aba/tela em foco, internet de volta) recarrega;
+   * 3) de reserva, recarrega a cada 30 s com a tela aberta.
+   * Recargas em segundo plano não mostram carregando e nunca rodam duas ao mesmo tempo.
+   */
+  const running = useRef(false);
+  const queued = useRef(false);
+  const lastLoad = useRef(0);
+  const backgroundLoad = useCallback(async () => {
+    if (running.current) {
+      queued.current = true;
+      return;
+    }
+    running.current = true;
+    try {
+      do {
+        queued.current = false;
+        lastLoad.current = Date.now();
+        await load().catch(() => {}); // sem internet: tenta de novo na próxima
+      } while (queued.current);
+    } finally {
+      running.current = false;
+    }
+  }, [load]);
+
   useEffect(() => {
-    refreshAll();
+    load();
     // login/logout (em qualquer aba) recarrega os dados
-    const unsubscribe = dataService.onAuthChange(() => setTimeout(refreshAll, 0));
+    const unsubscribe = dataService.onAuthChange(() => setTimeout(load, 0));
     return unsubscribe;
-  }, [refreshAll]);
+  }, [load]);
+
+  const loggedIn = Boolean(currentUser);
+  useEffect(() => {
+    if (!loggedIn) return undefined;
+    let timer = null;
+    const soon = () => {
+      clearTimeout(timer);
+      timer = setTimeout(backgroundLoad, 300); // junta avisos em sequência
+    };
+    const stopRemote = dataService.onRemoteChange(soon);
+    const onFocus = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastLoad.current > 3000) backgroundLoad();
+    };
+    document.addEventListener('visibilitychange', onFocus);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('online', onFocus);
+    const poll = setInterval(() => {
+      if (document.visibilityState === 'visible') backgroundLoad();
+    }, 30000);
+    return () => {
+      clearTimeout(timer);
+      stopRemote();
+      document.removeEventListener('visibilitychange', onFocus);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('online', onFocus);
+      clearInterval(poll);
+    };
+  }, [loggedIn, backgroundLoad]);
 
   const userById = useCallback(
     (id) => users.find((u) => u.id === id) ?? { id, name: '???', color: '#666' },
@@ -186,8 +247,8 @@ export function AppProvider({ children }) {
   const logout = useCallback(async () => {
     await dataService.logout();
     setSelectedTripId(null);
-    await refreshAll();
-  }, [refreshAll]);
+    await load();
+  }, [load]);
 
   const value = useMemo(
     () => ({

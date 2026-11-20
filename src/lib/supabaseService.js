@@ -170,6 +170,31 @@ export function onAuthChange(callback) {
   return () => subscription.unsubscribe();
 }
 
+/* ---------------- Tempo real ---------------- */
+
+// Canal de avisos entre os aparelhos (Supabase Realtime, broadcast): quem muda
+// algo manda "mudou" e os outros recarregam. O aviso não leva dado nenhum; os
+// dados continuam vindo do banco, protegidos pelo RLS.
+let syncChannel = null;
+
+/** Escuta os avisos de mudança dos outros aparelhos. Devolve a função para parar. */
+export function onRemoteChange(callback) {
+  const channel = supabase
+    .channel('racha-sync', { config: { broadcast: { self: false } } })
+    .on('broadcast', { event: 'mudou' }, () => callback())
+    .subscribe();
+  syncChannel = channel;
+  return () => {
+    if (syncChannel === channel) syncChannel = null;
+    supabase.removeChannel(channel);
+  };
+}
+
+/** Avisa os outros aparelhos que algo mudou (sem dados). */
+export function notifyChange() {
+  syncChannel?.send({ type: 'broadcast', event: 'mudou', payload: { em: Date.now() } }).catch(() => {});
+}
+
 /* ---------------- Usuários / Amigos ---------------- */
 
 export async function getUsers() {
