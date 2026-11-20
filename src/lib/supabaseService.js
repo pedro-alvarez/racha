@@ -58,6 +58,8 @@ const mapExpense = (row) => {
     paidBy: row.paid_by,
     createdBy: row.created_by ?? row.paid_by,
     splitType: row.split_type,
+    note: row.note ?? '',
+    receiptPath: row.receipt_path ?? null,
     participants: parts.map((p) => p.user_id),
     createdAt: row.created_at,
   };
@@ -363,6 +365,8 @@ export async function updateExpense(expenseId, expense, changes = []) {
       amount: expense.amount,
       paid_by: expense.paidBy,
       split_type: expense.splitType ?? 'equal',
+      note: expense.note ?? '',
+      receipt_path: expense.receiptPath ?? null,
     })
     .eq('id', expenseId);
   if (error) fail(error);
@@ -430,6 +434,8 @@ export async function addExpense(tripId, expense) {
       amount: expense.amount,
       paid_by: expense.paidBy,
       split_type: expense.splitType ?? 'equal',
+      note: expense.note ?? '',
+      receipt_path: expense.receiptPath ?? null,
     })
     .select()
     .single();

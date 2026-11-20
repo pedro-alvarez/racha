@@ -11,6 +11,8 @@ import { CATEGORIES } from '../lib/categories';
 import { SPLIT_TYPES, validateExpense, fillRemainder, computeShares } from '../lib/splitEngine';
 import { parseToCents, formatCents, formatDateFull, firstName, maskCents, todayISO } from '../lib/format';
 import Avatar from '../components/Avatar';
+import { ReceiptPicker } from '../components/Receipt';
+import * as dataService from '../lib/dataService';
 
 const SPLIT_OPTIONS = [
   { id: SPLIT_TYPES.EQUAL, label: 'Igual' },
@@ -39,6 +41,9 @@ export default function AddExpensePage() {
   const [amountText, setAmountText] = useState(original ? maskCents(String(original.amount)) : '');
   const [paidBy, setPaidBy] = useState(original?.paidBy ?? currentUser?.id);
   const [category, setCategory] = useState(original?.category ?? 'comida');
+  const [note, setNote] = useState(original?.note ?? '');
+  const [receiptFile, setReceiptFile] = useState(null); // nota fiscal/comprovante novo
+  const [keptReceipt, setKeptReceipt] = useState(original?.receiptPath ?? null); // anexo já salvo
   const [splitType, setSplitType] = useState(original?.splitType ?? SPLIT_TYPES.EQUAL);
   const [participants, setParticipants] = useState(
     new Set(original?.participants ?? trip?.members ?? [])
@@ -99,6 +104,8 @@ export default function AddExpensePage() {
       splitType,
       participants: [...participants],
       shares: buildShares(),
+      note: note.trim(),
+      receiptPath: keptReceipt,
     };
 
     const { valid, error: validationError } = validateExpense(expense);
@@ -109,6 +116,7 @@ export default function AddExpensePage() {
 
     setSaving(true);
     try {
+      if (receiptFile) expense.receiptPath = await dataService.uploadReceipt(tripId, receiptFile);
       if (original) {
         await updateExpense(expenseId, expense, buildChanges(original, expense));
       } else {
@@ -142,6 +150,14 @@ export default function AddExpensePage() {
       changes.push({ field: 'valor', old: formatCents(oldE.amount), new: formatCents(newE.amount) });
     if (oldE.category !== newE.category)
       changes.push({ field: 'categoria', old: catLabel(oldE.category), new: catLabel(newE.category) });
+    if ((oldE.note ?? '') !== (newE.note ?? ''))
+      changes.push({ field: 'observação', old: oldE.note || '(vazia)', new: newE.note || '(vazia)' });
+    if ((oldE.receiptPath ?? null) !== (newE.receiptPath ?? null))
+      changes.push({
+        field: 'nota/comprovante',
+        old: oldE.receiptPath ? 'anexado' : 'sem anexo',
+        new: newE.receiptPath ? (oldE.receiptPath ? 'trocado' : 'anexado') : 'removido',
+      });
     if (oldE.paidBy !== newE.paidBy)
       changes.push({ field: 'quem pagou', old: who(oldE.paidBy), new: who(newE.paidBy) });
     const oldSplit = JSON.stringify({ t: oldE.splitType, p: [...oldE.participants].sort(), s: oldE.shares ?? null });
@@ -359,6 +375,28 @@ export default function AddExpensePage() {
           )}
         </div>
 
+        {/* observação e nota fiscal (opcionais) */}
+        <div>
+          <label className="label-caps">Observação</label>
+          <textarea
+            rows={2}
+            maxLength={500}
+            className={`${inputCls} mt-2 resize-none`}
+            placeholder="Opcional: o que foi, combinado, detalhes…"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <div className="mt-3">
+            <ReceiptPicker
+              file={receiptFile}
+              onChange={setReceiptFile}
+              label="Anexar nota fiscal ou comprovante (opcional)"
+              existingPath={keptReceipt}
+              onRemoveExisting={() => setKeptReceipt(null)}
+            />
+          </div>
+        </div>
+
         {error && <p className="text-sm text-accent-bright">{error}</p>}
 
         <button
@@ -366,7 +404,7 @@ export default function AddExpensePage() {
           disabled={saving}
           className="w-full py-3.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold disabled:opacity-50"
         >
-          {saving ? 'Salvando…' : original ? 'Salvar alterações' : 'Adicionar despesa'}
+          {saving ? (receiptFile ? 'Enviando anexo…' : 'Salvando…') : original ? 'Salvar alterações' : 'Adicionar despesa'}
         </button>
       </form>
     </div>

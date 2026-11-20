@@ -14,6 +14,7 @@ import { computeShares } from '../lib/splitEngine';
 import * as dataService from '../lib/dataService';
 import { formatCents, formatDateFull, formatTime, firstName } from '../lib/format';
 import Avatar from './Avatar';
+import { ReceiptLink } from './Receipt';
 
 export default function ExpenseModal({ expense, onClose }) {
   const { userById, currentUser, trips, deleteExpense } = useApp();
@@ -115,6 +116,21 @@ export default function ExpenseModal({ expense, onClose }) {
             </p>
           </div>
         </div>
+
+        {/* observação e nota fiscal */}
+        {(expense.note || expense.receiptPath) && (
+          <div className="card-flat p-3.5 mt-2.5">
+            {expense.note && (
+              <>
+                <p className="label-caps">Observação</p>
+                <p className="mt-1 text-sm whitespace-pre-wrap break-words">{expense.note}</p>
+              </>
+            )}
+            {expense.receiptPath && (
+              <ReceiptLink path={expense.receiptPath} label="Ver nota/comprovante" className={expense.note ? 'mt-3' : ''} />
+            )}
+          </div>
+        )}
 
         {/* divisão */}
         <p className="label-caps mt-5">Divisão ({expense.participants.length} pessoas)</p>
