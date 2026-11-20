@@ -60,6 +60,7 @@ export const getPayments = route('getPayments');
 export const settleDebt = route('settleDebt');
 export const confirmPayment = route('confirmPayment');
 export const declinePayment = route('declinePayment');
+export const reopenPayment = route('reopenPayment');
 
 /* ---------------- Administração ---------------- */
 

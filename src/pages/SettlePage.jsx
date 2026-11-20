@@ -7,7 +7,7 @@
  */
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, HandCoins, ReceiptText, Share2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, HandCoins, ReceiptText, Share2, Undo2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import PaymentModal from '../components/PaymentModal';
@@ -17,14 +17,15 @@ import DebtBreakdown from '../components/DebtBreakdown';
 
 export default function SettlePage() {
   const { tripId } = useParams();
-  const { userById, currentUser, confirmPayment, declinePayment } = useApp();
-  const { trip, settlements, expenses, pendingPayments } = useTripSummary(tripId);
+  const { userById, currentUser, confirmPayment, declinePayment, reopenPayment } = useApp();
+  const { trip, settlements, expenses, payments, pendingPayments } = useTripSummary(tripId);
   const navigate = useNavigate();
   const [payingTransfer, setPayingTransfer] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [shared, setShared] = useState(false);
   const [openKey, setOpenKey] = useState(null);
   const [tab, setTab] = useState('mine');
+  const [showConfirmed, setShowConfirmed] = useState(false);
 
   if (!trip) return null;
 
@@ -36,11 +37,28 @@ export default function SettlePage() {
   const iOwe = mine.filter((t) => t.from === currentUser.id).reduce((acc, t) => acc + t.amount, 0);
   const owedToMe = mine.filter((t) => t.to === currentUser.id).reduce((acc, t) => acc + t.amount, 0);
   const displayName = (u) => (u.id === currentUser.id ? 'Você' : firstName(u.name));
+  const descriptionOf = Object.fromEntries(expenses.map((e) => [e.id, e.description]));
+  const confirmedList = payments
+    .filter((p) => p.status !== 'pending' && (isAdmin || p.from === currentUser.id || p.to === currentUser.id))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const handleConfirm = async (paymentId) => {
     setBusyId(paymentId);
     try {
       await confirmPayment(paymentId);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleReopen = async (p) => {
+    const msg = `Desfazer o pagamento de ${formatCentsAbs(p.amount)}? Ele volta para "Aguardando confirmação": aí dá pra confirmar de novo ou recusar.`;
+    if (!confirm(msg)) return;
+    setBusyId(p.id);
+    try {
+      await reopenPayment(p.id);
+    } catch (err) {
+      alert(err.message);
     } finally {
       setBusyId(null);
     }
@@ -273,6 +291,60 @@ export default function SettlePage() {
               );
             })}
           </ul>
+        </section>
+      )}
+
+      {/* pagamentos já confirmados: quem recebeu (ou o admin) pode desfazer um engano */}
+      {confirmedList.length > 0 && (
+        <section className="mt-7">
+          <button
+            onClick={() => setShowConfirmed((v) => !v)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-bold">Pagamentos confirmados</h2>
+            <span className="flex items-center gap-1 text-xs font-semibold text-muted">
+              {confirmedList.length}
+              <ChevronDown size={14} className={`transition-transform ${showConfirmed ? 'rotate-180' : ''}`} />
+            </span>
+          </button>
+          {showConfirmed && (
+            <ul className="mt-3 space-y-2.5">
+              {confirmedList.map((p) => {
+                const from = userById(p.from);
+                const to = userById(p.to);
+                const canUndo = p.to === currentUser.id || isAdmin;
+                const what = p.expenseIds?.length
+                  ? p.expenseIds.map((id) => descriptionOf[id] ?? 'despesa apagada').join(', ')
+                  : p.note || 'acerto geral';
+                return (
+                  <li key={p.id} className="card-flat p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex -space-x-2">
+                        <Avatar user={from} size="sm" ring />
+                        <Avatar user={to} size="sm" ring />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">
+                          {displayName(from)} pagou {p.to === currentUser.id ? 'você' : firstName(to.name)}
+                        </p>
+                        <p className="text-xs text-muted mt-0.5 truncate">{what}</p>
+                      </div>
+                      <p className="font-extrabold text-positive">{formatCentsAbs(p.amount)}</p>
+                    </div>
+                    {canUndo && (
+                      <button
+                        onClick={() => handleReopen(p)}
+                        disabled={busyId === p.id}
+                        className="mt-3 w-full py-2 rounded-2xl bg-white/5 text-muted-light text-xs font-bold hover:bg-white/10 hover:text-white transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        <Undo2 size={13} /> Desfazer confirmação
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
       )}
 

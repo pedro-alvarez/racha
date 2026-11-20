@@ -97,6 +97,12 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
     if (amount <= 0) return setError('Informe o valor do pagamento.');
     if (mode === 'custom' && amount > open)
       return setError(`O valor passa do que falta pagar (${formatCentsAbs(open)}).`);
+    // quem recebe confirma na hora: pede uma checagem antes, para não registrar o valor errado
+    if (iAmReceiver) {
+      const chosen = expenseRows.filter((it) => selected.has(it.id)).map((it) => it.description);
+      const what = mode === 'all' ? 'a dívida toda' : mode === 'expenses' ? chosen.join(', ') : 'um valor avulso';
+      if (!confirm(`Confirmar que ${firstName(from.name)} te pagou ${formatCentsAbs(amount)} (${what})?`)) return;
+    }
     setSaving(true);
     try {
       await settleDebt(tripId, {
