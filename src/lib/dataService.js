@@ -71,6 +71,16 @@ export const uploadReceipt = route('uploadReceipt');
 export const attachReceipt = route('attachReceipt');
 export const getReceiptUrl = route('getReceiptUrl');
 
+/* ---------------- Notificações no celular ---------------- */
+
+export const pushSupport = () => real.pushSupport();
+export const registerServiceWorker = route('registerServiceWorker');
+export const getPushSubscription = route('getPushSubscription');
+export const enablePush = route('enablePush');
+export const disablePush = route('disablePush');
+export const sendTestPush = route('sendTestPush');
+export const notify = (...args) => real.notify(...args);
+
 /* ---------------- Administração ---------------- */
 
 export const getPendingUsers = route('getPendingUsers');

@@ -29,6 +29,7 @@ import SecurityPage from './pages/SecurityPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
+import NotificationSettingsPage from './pages/NotificationSettingsPage';
 
 export default function App() {
   // Splash só na carga inicial; o app já renderiza por trás e é "revelado".
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/perfil/:userId" element={<ProfilePage />} />
             <Route path="/notificacoes" element={<NotificationsPage />} />
+            <Route path="/conta/avisos" element={<NotificationSettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

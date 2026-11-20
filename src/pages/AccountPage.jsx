@@ -14,6 +14,7 @@ import {
   Settings,
   ShieldCheck,
   UserRound,
+  BellRing,
 } from 'lucide-react';
 import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
@@ -112,6 +113,7 @@ export default function AccountPage() {
           dot={hasPendingDebts}
           onClick={() => navigate('/notificacoes')}
         />
+        <Row Icon={BellRing} label="Avisos no celular" onClick={() => navigate('/conta/avisos')} />
         <Row Icon={KeyRound} label="Segurança" onClick={() => navigate('/seguranca')} />
       </div>
 
