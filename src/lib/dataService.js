@@ -22,6 +22,9 @@ export const getCurrentUser = route('getCurrentUser');
 export const needsOnboarding = route('needsOnboarding');
 export const completeOnboarding = route('completeOnboarding');
 export const changePassword = route('changePassword');
+export const requestPasswordReset = route('requestPasswordReset');
+export const getPasswordRequests = route('getPasswordRequests');
+export const adminTempPassword = route('adminTempPassword');
 
 /** Avisos de mudança entre aparelhos (tempo real). */
 export function onRemoteChange(callback) {

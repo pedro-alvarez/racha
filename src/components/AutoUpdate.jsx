@@ -12,7 +12,7 @@ import { useLocation } from 'react-router-dom';
 
 const BASE = import.meta.env.BASE_URL;
 const A_CADA = 60 * 1000;
-const ROTA_COM_FORMULARIO = /nova-despesa|editar|criar-conta|bem-vindo|viagens\/nova|login/;
+const ROTA_COM_FORMULARIO = /nova-despesa|editar|criar-conta|bem-vindo|viagens\/nova|login|esqueci-senha|seguranca/;
 
 async function versaoNoServidor() {
   try {

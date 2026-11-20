@@ -26,6 +26,7 @@ const mapProfile = (row) =>
     approved: row.approved ?? false,
     pix: row.pix_key ? { type: row.pix_type, key: row.pix_key } : null,
     notifyPrefs: row.notify_prefs ?? null,
+    tempPassword: row.temp_password ?? false,
   };
 
 const mapTrip = (row) => ({
@@ -580,8 +581,35 @@ export async function deleteTrip(tripId) {
 
 /** Troca a senha do usuário logado. */
 export async function changePassword(newPassword) {
-  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) fail(error);
+  // criou a própria senha: sai do aviso de "senha provisória"
+  if (data?.user?.id) await supabase.from('profiles').update({ temp_password: false }).eq('id', data.user.id);
+}
+
+/* ---------------- Esqueci minha senha (sem e-mail) ---------------- */
+
+/** Pedido feito na tela de login: o admin recebe um aviso e cria uma senha provisória. */
+export async function requestPasswordReset(email) {
+  const { error } = await supabase.rpc('request_password_reset', { p_email: email });
+  if (error) fail(error);
+}
+
+/** Pedidos de nova senha (só o admin vê). */
+export async function getPasswordRequests() {
+  const { data, error } = await supabase
+    .from('password_requests')
+    .select('user_id, requested_at')
+    .order('requested_at', { ascending: false });
+  if (error) fail(error);
+  return data.map((r) => ({ userId: r.user_id, requestedAt: r.requested_at }));
+}
+
+/** Admin cria uma senha provisória para alguém; devolve a senha para mandar à pessoa. */
+export async function adminTempPassword(userId) {
+  const { data, error } = await supabase.rpc('admin_temp_password', { target: userId });
+  if (error) fail(error);
+  return data;
 }
 
 /* ---------------- Rolês abertos ---------------- */

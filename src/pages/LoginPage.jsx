@@ -68,6 +68,11 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
           />
+          <div className="text-right -mt-1">
+            <Link to="/esqueci-senha" className="text-xs font-semibold text-muted hover:text-white">
+              Esqueci minha senha
+            </Link>
+          </div>
           {error && <p className="text-sm text-accent-bright">{error}</p>}
           <button
             type="submit"

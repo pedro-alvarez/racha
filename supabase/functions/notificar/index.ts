@@ -8,6 +8,7 @@
  *   confirmacao  pagamento confirmado     -> quem pagou
  *   recusa       pagamento recusado ou cancelado (extra traz from/to/amount, já foi apagado) -> o outro lado
  *   teste        aviso de teste           -> a própria pessoa
+ *   pedido_senha alguém esqueceu a senha  -> os admins (só chamada interna, pelo banco)
  *
  * Cada pessoa escolhe o que recebe (profiles.notify_prefs): chave geral, um
  * interruptor por tipo e silêncio à noite (horário de Brasília). As chaves
@@ -91,9 +92,12 @@ Deno.serve(async (req) => {
     return responder(400, { error: 'Dados inválidos.' });
   }
 
-  // quem está chamando: token do app, ou teste pelo banco
+  // quem está chamando: token do app, ou chamada interna pelo banco (pg_net)
+  const interno = Boolean(cfg.teste) && req.headers.get('x-racha-teste') === cfg.teste;
   let eu: string | null = null;
-  if (cfg.teste && req.headers.get('x-racha-teste') === cfg.teste && typeof corpo.como === 'string') {
+  if (interno && corpo.tipo === 'pedido_senha') {
+    eu = 'banco';
+  } else if (interno && typeof corpo.como === 'string') {
     eu = corpo.como;
   } else {
     const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
@@ -109,7 +113,16 @@ Deno.serve(async (req) => {
   const souAdmin = perfil.get(eu)?.role === 'admin';
   const avisos: Aviso[] = [];
 
-  if (tipo === 'teste') {
+  if (tipo === 'pedido_senha') {
+    if (!interno) return responder(403, { error: 'Sem permissão.' });
+    const quem = String(extra.userId ?? '');
+    for (const adm of (perfis ?? []).filter((x) => x.role === 'admin')) {
+      avisos.push({
+        para: adm.id, categoria: 'teste', title: `${nome(quem)} esqueceu a senha`,
+        body: 'Toque para criar uma senha provisória', url: `${SITE}#/admin`, tag: `senha-${quem}`,
+      });
+    }
+  } else if (tipo === 'teste') {
     avisos.push({
       para: eu, categoria: 'teste', title: 'Notificações do Racha ativadas ✓',
       body: 'É assim que os avisos vão chegar.', url: SITE, tag: 'teste',
