@@ -14,6 +14,7 @@ import PaymentModal from '../components/PaymentModal';
 import { formatCentsAbs, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
 import DebtBreakdown from '../components/DebtBreakdown';
+import { AttachReceiptButton, ReceiptLink } from '../components/Receipt';
 
 export default function SettlePage() {
   const { tripId } = useParams();
@@ -267,6 +268,13 @@ export default function SettlePage() {
                     </div>
                     <p className="font-extrabold">{formatCentsAbs(p.amount)}</p>
                   </div>
+                  {p.receiptPath ? (
+                    <ReceiptLink path={p.receiptPath} className="mt-3" />
+                  ) : iAmPayer ? (
+                    <AttachReceiptButton payment={p} className="mt-3" />
+                  ) : (
+                    iAmReceiver && <p className="mt-3 text-[11px] text-muted">Sem comprovante anexado.</p>
+                  )}
                   {(iAmReceiver || iAmPayer) && (
                     <div className="mt-3 flex gap-2">
                       {iAmReceiver && (
@@ -331,6 +339,13 @@ export default function SettlePage() {
                       </div>
                       <p className="font-extrabold text-positive">{formatCentsAbs(p.amount)}</p>
                     </div>
+                    {p.receiptPath ? (
+                      <ReceiptLink path={p.receiptPath} className="mt-3" />
+                    ) : (
+                      (p.from === currentUser.id || p.to === currentUser.id || isAdmin) && (
+                        <AttachReceiptButton payment={p} className="mt-3" />
+                      )
+                    )}
                     {canUndo && (
                       <button
                         onClick={() => handleReopen(p)}

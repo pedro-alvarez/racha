@@ -67,6 +67,9 @@ export const settleDebt = route('settleDebt');
 export const confirmPayment = route('confirmPayment');
 export const declinePayment = route('declinePayment');
 export const reopenPayment = route('reopenPayment');
+export const uploadReceipt = route('uploadReceipt');
+export const attachReceipt = route('attachReceipt');
+export const getReceiptUrl = route('getReceiptUrl');
 
 /* ---------------- Administração ---------------- */
 
