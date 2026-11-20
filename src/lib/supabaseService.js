@@ -73,6 +73,7 @@ const mapPayment = (row) => ({
   amount: row.amount,
   note: row.note,
   expenseIds: row.expense_ids ?? [],
+  receiptPath: row.receipt_path ?? null,
   status: row.status ?? 'confirmed',
   createdAt: row.created_at,
 });
@@ -463,14 +464,17 @@ export async function getPayments(tripId) {
 }
 
 /** Registra um acerto: "from" pagou "amount" (centavos) para "to". */
-export async function settleDebt(tripId, { from, to, amount, note, expenseIds = [] }) {
+export async function settleDebt(tripId, { from, to, amount, note, expenseIds = [], receiptPath = null }) {
   const me = (await supabase.auth.getSession()).data.session?.user?.id;
   // quem RECEBE registrando ("já recebi") confirma na hora;
   // quem PAGA registra como pendente e o recebedor precisa aceitar
   const status = me === to ? 'confirmed' : 'pending';
   const { data, error } = await supabase
     .from('payments')
-    .insert({ trip_id: tripId, from_user: from, to_user: to, amount, note: note ?? '', expense_ids: expenseIds, status })
+    .insert({
+      trip_id: tripId, from_user: from, to_user: to, amount, note: note ?? '', expense_ids: expenseIds, status,
+      receipt_path: receiptPath,
+    })
     .select()
     .single();
   if (error) fail(error);
@@ -616,6 +620,56 @@ export async function rejectUser(userId) {
 /** Remove alguém do app (admin). Mesmo efeito de recusar: apaga o perfil. */
 export async function removeUser(userId) {
   return rejectUser(userId);
+}
+
+/* ---------------- Comprovantes de pagamento (Storage privado) ---------------- */
+
+const RECEIPT_MAX = 10 * 1024 * 1024;
+
+/** Reduz fotos grandes (prints de banco costumam ter vários MB) para JPEG de até 1800 px. */
+async function shrinkImage(file) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1024 * 1024) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.85));
+    return blob && blob.size < file.size ? new File([blob], 'comprovante.jpg', { type: 'image/jpeg' }) : file;
+  } catch {
+    return file; // navegador sem suporte: sobe o original
+  }
+}
+
+/** Sobe o comprovante em comprovantes/<viagem>/<arquivo> e devolve o caminho. */
+export async function uploadReceipt(tripId, original) {
+  const file = await shrinkImage(original);
+  if (file.size > RECEIPT_MAX) throw new Error('O comprovante passa de 10 MB. Mande um print ou um PDF menor.');
+  const ext = file.type === 'application/pdf' ? 'pdf' : (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${tripId}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from('comprovantes').upload(path, file, { contentType: file.type || undefined });
+  if (error) fail(error);
+  return path;
+}
+
+/** Anexa um comprovante a um pagamento já registrado (quem pagou, quem recebeu ou o admin). */
+export async function attachReceipt(paymentId, tripId, file) {
+  const path = await uploadReceipt(tripId, file);
+  const { data, error } = await supabase.rpc('set_payment_receipt', { p_payment: paymentId, p_path: path });
+  if (error || !data) {
+    await supabase.storage.from('comprovantes').remove([path]);
+    if (error) fail(error);
+    throw new Error('Só quem pagou, quem recebeu ou o admin pode anexar o comprovante.');
+  }
+}
+
+/** Link temporário (1 h) para ver um comprovante: o bucket é privado. */
+export async function getReceiptUrl(path) {
+  const { data, error } = await supabase.storage.from('comprovantes').createSignedUrl(path, 60 * 60);
+  if (error) fail(error);
+  return data.signedUrl;
 }
 
 /* ---------------- Foto de perfil (Storage) ---------------- */

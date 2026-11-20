@@ -31,6 +31,7 @@ link de um convite. A conta nova espera a aprovação do admin do grupo.
 | **Editar despesa** | Toque numa despesa da lista → **Editar** | A alteração entra no **histórico** da despesa |
 | **Despesas** | Aba **Despesas** (ou o atalho na Visão Geral) | Só as despesas da viagem, por dia, com total, sua parte, busca e filtro |
 | **Acertar contas** | Card de saldo → "Acertar contas" → **Pagar** | Paga tudo, por despesa ou outro valor; mostra a chave Pix de quem recebe |
+| **Comprovante** | Janela de pagamento → **Anexar comprovante** (ou depois, no pagamento pendente) | Foto, print ou PDF; quem recebe toca em **Ver comprovante** antes de confirmar |
 | **Confirmar pagamento** | Conta → Notificações | Quem recebeu confirma ou recusa o pagamento |
 | **Rolê aberto** | Visão Geral → rolê aberto → **Eu vou! Entrar no rolê** | O rolê passa a aparecer entre os seus |
 | **Convidar amigo** | Amigos → digite um e-mail | E-mail já cadastrado vira amizade; e-mail novo recebe um convite com link |
@@ -77,7 +78,7 @@ dependências, roda `npm run build` e publica a pasta `dist/`.
 
 O esquema está em `supabase/`. Num projeto Supabase novo, rode no SQL Editor,
 nesta ordem: `schema.sql` → `upgrade-v2.sql` → `upgrade-v3.sql` →
-`upgrade-v4.sql` → `upgrade-v5.sql` → `upgrade-v6.sql` → `upgrade-v7.sql` → `upgrade-v8.sql`. Os modelos de e-mail de convite estão em
+`upgrade-v4.sql` → `upgrade-v5.sql` → `upgrade-v6.sql` → `upgrade-v7.sql` → `upgrade-v8.sql` → `upgrade-v9.sql` (comprovantes). Os modelos de e-mail de convite estão em
 `supabase/email-templates.md`. Depois, troque a URL e a chave em
 `src/lib/supabaseClient.js`.
 

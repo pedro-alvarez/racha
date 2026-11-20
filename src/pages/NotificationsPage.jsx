@@ -9,6 +9,7 @@ import { useApp } from '../context/AppContext';
 import { pairwiseDebts } from '../lib/splitEngine';
 import { formatCentsAbs, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
+import { AttachReceiptButton, ReceiptLink } from '../components/Receipt';
 
 export default function NotificationsPage() {
   const { trips, expensesByTrip, paymentsByTrip, currentUser, userById, confirmPayment, declinePayment } = useApp();
@@ -85,6 +86,11 @@ export default function NotificationsPage() {
                       </p>
                     </div>
                   </div>
+                  {p.receiptPath ? (
+                    <ReceiptLink path={p.receiptPath} className="mt-3" />
+                  ) : (
+                    !iAmReceiver && <AttachReceiptButton payment={p} className="mt-3" />
+                  )}
                   <div className="mt-3 flex gap-2">
                     {iAmReceiver && (
                       <button

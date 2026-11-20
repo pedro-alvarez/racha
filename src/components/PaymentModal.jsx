@@ -13,6 +13,8 @@ import { useApp } from '../context/AppContext';
 import { formatCentsAbs, formatDate, firstName, maskCents, parseToCents } from '../lib/format';
 import Avatar from './Avatar';
 import { expenseCoverage } from '../lib/splitEngine';
+import * as dataService from '../lib/dataService';
+import { ReceiptLink, ReceiptPicker } from './Receipt';
 
 export default function PaymentModal({ transfer, tripId, onClose }) {
   const { userById, currentUser, settleDebt, confirmPayment, paymentsByTrip } = useApp();
@@ -20,6 +22,7 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
   const [selected, setSelected] = useState(new Set());
   const [customText, setCustomText] = useState('');
   const [note, setNote] = useState('');
+  const [receipt, setReceipt] = useState(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -105,7 +108,9 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
     }
     setSaving(true);
     try {
+      const receiptPath = receipt ? await dataService.uploadReceipt(tripId, receipt) : null;
       await settleDebt(tripId, {
+        receiptPath,
         from: transfer.from,
         to: transfer.to,
         amount,
@@ -173,6 +178,7 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
                         ? `: ${p.expenseIds.map((id) => descriptionOf[id] ?? 'despesa').join(', ')}`
                         : ''}
                     </p>
+                    <ReceiptLink path={p.receiptPath} className="mt-1" />
                   </div>
                   {iAmReceiver ? (
                     <button
@@ -323,6 +329,8 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
           </div>
         )}
 
+        <ReceiptPicker file={receipt} onChange={setReceipt} />
+
         <input
           className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm placeholder:text-muted focus:outline-none focus:border-accent/60 mt-4"
           placeholder="Observação (opcional): Pix, dinheiro…"
@@ -344,7 +352,9 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
           className="mt-4 w-full py-3.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold disabled:opacity-50"
         >
           {saving
-            ? 'Registrando…'
+            ? receipt
+              ? 'Enviando comprovante…'
+              : 'Registrando…'
             : open <= 0
               ? 'Nada a pagar agora'
               : iAmReceiver
