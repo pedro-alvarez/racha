@@ -146,7 +146,8 @@ export function AppProvider({ children }) {
 
   const addExpense = useCallback(
     async (tripId, expense) => {
-      await dataService.addExpense(tripId, expense);
+      const created = await dataService.addExpense(tripId, expense);
+      if (created?.id) dataService.notify('despesa', created.id);
       await refreshAll();
     },
     [refreshAll]
@@ -155,6 +156,7 @@ export function AppProvider({ children }) {
   const updateExpense = useCallback(
     async (expenseId, expense, changes) => {
       await dataService.updateExpense(expenseId, expense, changes);
+      dataService.notify('edicao', expenseId);
       await refreshAll();
     },
     [refreshAll]
@@ -171,6 +173,7 @@ export function AppProvider({ children }) {
   const confirmPayment = useCallback(
     async (paymentId) => {
       await dataService.confirmPayment(paymentId);
+      dataService.notify('confirmacao', paymentId);
       await refreshAll();
     },
     [refreshAll]
@@ -178,10 +181,13 @@ export function AppProvider({ children }) {
 
   const declinePayment = useCallback(
     async (paymentId) => {
+      // guarda quem/quanto antes de apagar, para avisar o outro lado
+      const p = Object.values(paymentsByTrip).flat().find((x) => x.id === paymentId);
       await dataService.declinePayment(paymentId);
+      if (p) dataService.notify('recusa', paymentId, { from: p.from, to: p.to, amount: p.amount, tripId: p.tripId });
       await refreshAll();
     },
-    [refreshAll]
+    [refreshAll, paymentsByTrip]
   );
 
   const reopenPayment = useCallback(
@@ -202,7 +208,8 @@ export function AppProvider({ children }) {
 
   const settleDebt = useCallback(
     async (tripId, payment) => {
-      await dataService.settleDebt(tripId, payment);
+      const created = await dataService.settleDebt(tripId, payment);
+      if (created?.id) dataService.notify('pagamento', created.id);
       await refreshAll();
     },
     [refreshAll]

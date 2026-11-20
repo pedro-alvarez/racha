@@ -32,6 +32,7 @@ link de um convite. A conta nova espera a aprovação do admin do grupo.
 | **Despesas** | Aba **Despesas** (ou o atalho na Visão Geral) | Só as despesas da viagem, por dia, com total, sua parte, busca e filtro |
 | **Acertar contas** | Card de saldo → "Acertar contas" → **Pagar** | Paga tudo, por despesa ou outro valor; mostra a chave Pix de quem recebe |
 | **Comprovante** | Janela de pagamento → **Anexar comprovante** (ou depois, no pagamento pendente) | Foto, print ou PDF; quem recebe toca em **Ver comprovante** antes de confirmar |
+| **Avisos no celular** | Conta → **Avisos no celular** | Ativa as notificações no aparelho e escolhe o que receber (despesas, edições, pagamentos, confirmações) e o silêncio à noite. No iPhone, só com o Racha na tela de início |
 | **Confirmar pagamento** | Conta → Notificações | Quem recebeu confirma ou recusa o pagamento |
 | **Rolê aberto** | Visão Geral → rolê aberto → **Eu vou! Entrar no rolê** | O rolê passa a aparecer entre os seus |
 | **Convidar amigo** | Amigos → digite um e-mail | E-mail já cadastrado vira amizade; e-mail novo recebe um convite com link |
@@ -78,7 +79,7 @@ dependências, roda `npm run build` e publica a pasta `dist/`.
 
 O esquema está em `supabase/`. Num projeto Supabase novo, rode no SQL Editor,
 nesta ordem: `schema.sql` → `upgrade-v2.sql` → `upgrade-v3.sql` →
-`upgrade-v4.sql` → `upgrade-v5.sql` → `upgrade-v6.sql` → `upgrade-v7.sql` → `upgrade-v8.sql` → `upgrade-v9.sql` (comprovantes). Os modelos de e-mail de convite estão em
+`upgrade-v4.sql` → `upgrade-v5.sql` → `upgrade-v6.sql` → `upgrade-v7.sql` → `upgrade-v8.sql` → `upgrade-v9.sql` (comprovantes) → `upgrade-v10.sql` (notificações) → `upgrade-v11.sql` (chaves das notificações, ver o arquivo). Os modelos de e-mail de convite estão em
 `supabase/email-templates.md`. Depois, troque a URL e a chave em
 `src/lib/supabaseClient.js`.
 
@@ -86,6 +87,13 @@ A tela **Criar conta** usa a Edge Function `supabase/functions/criar-conta`: ela
 cria o login já confirmado, sem depender de e-mail, e a conta espera a aprovação
 do admin. Publique com `supabase functions deploy criar-conta --no-verify-jwt`
 (a chave publishable do app não é um JWT).
+
+Os **avisos no celular** usam a Edge Function `supabase/functions/notificar`
+(Web Push): o app chama a função depois de lançar, editar, pagar, confirmar ou
+recusar, e ela avisa quem precisa saber, respeitando as preferências de cada um.
+O service worker `public/sw.js` mostra o aviso. Publique com
+`supabase functions deploy notificar --no-verify-jwt` (a função confere o token
+do usuário por dentro) e guarde as chaves VAPID no Vault (`upgrade-v11.sql`).
 
 ## Arquitetura
 

@@ -25,6 +25,7 @@ const mapProfile = (row) =>
     role: row.role ?? 'member',
     approved: row.approved ?? false,
     pix: row.pix_key ? { type: row.pix_type, key: row.pix_key } : null,
+    notifyPrefs: row.notify_prefs ?? null,
   };
 
 const mapTrip = (row) => ({
@@ -622,6 +623,87 @@ export async function removeUser(userId) {
   return rejectUser(userId);
 }
 
+/* ---------------- Notificações no celular (Web Push) ---------------- */
+
+// chave pública VAPID (a privada fica no Vault do Supabase, lida pela função "notificar")
+const VAPID_PUBLIC = 'BHgg5mhdzYviUgr963vzbZ_vXNwCLSndHRxq81OMk7FMIa6TUuJVu1MLaywWsBag2LTeD9udoVI3-LFtr_b6FaI';
+const SW_URL = `${import.meta.env.BASE_URL}sw.js`;
+
+function base64UrlToBytes(b64) {
+  const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
+/** O que este aparelho permite: suporte, se é iPhone, se está instalado e a permissão. */
+export function pushSupport() {
+  const ok = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+  return { ok, ios, standalone, permission: 'Notification' in window ? Notification.permission : 'unsupported' };
+}
+
+/** Registra o service worker (só cuida das notificações). */
+export async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null;
+  return navigator.serviceWorker.register(SW_URL);
+}
+
+/** A inscrição de notificação deste aparelho, se houver. */
+export async function getPushSubscription() {
+  if (!pushSupport().ok) return null;
+  const reg = await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL);
+  return reg ? reg.pushManager.getSubscription() : null;
+}
+
+/** Pede permissão, inscreve este aparelho e guarda no banco. */
+export async function enablePush() {
+  if (!pushSupport().ok) throw new Error('Este navegador não aceita notificações.');
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    throw new Error(
+      perm === 'denied'
+        ? 'As notificações estão bloqueadas para o Racha. Libere nas configurações do celular ou do navegador.'
+        : 'Você não liberou as notificações.'
+    );
+  }
+  const reg = (await registerServiceWorker()) ?? (await navigator.serviceWorker.ready);
+  await navigator.serviceWorker.ready;
+  const sub =
+    (await reg.pushManager.getSubscription()) ??
+    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64UrlToBytes(VAPID_PUBLIC) }));
+  const json = sub.toJSON();
+  const me = (await supabase.auth.getSession()).data.session?.user?.id;
+  const { error } = await supabase.from('push_subscriptions').upsert(
+    { user_id: me, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth, user_agent: navigator.userAgent.slice(0, 200) },
+    { onConflict: 'endpoint' }
+  );
+  if (error) fail(error);
+}
+
+/** Desliga as notificações neste aparelho. */
+export async function disablePush() {
+  const sub = await getPushSubscription();
+  if (!sub) return;
+  await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+  await sub.unsubscribe();
+}
+
+/** Manda um aviso de teste para os aparelhos da própria pessoa. */
+export async function sendTestPush() {
+  const { data, error } = await supabase.functions.invoke('notificar', { body: { tipo: 'teste' } });
+  if (error) fail(error);
+  return data;
+}
+
+/** Avisa quem precisa saber de uma ação (em segundo plano: nunca trava o app). */
+export function notify(tipo, id, extra = {}) {
+  supabase.functions.invoke('notificar', { body: { tipo, id, extra } }).then(
+    () => {},
+    () => {}
+  );
+}
+
 /* ---------------- Comprovantes de pagamento (Storage privado) ---------------- */
 
 const RECEIPT_MAX = 10 * 1024 * 1024;
@@ -699,6 +781,7 @@ export async function updateUser(userId, patch) {
     row.pix_type = patch.pix?.type ?? null;
     row.pix_key = patch.pix?.key ?? null;
   }
+  if ('notifyPrefs' in patch) row.notify_prefs = patch.notifyPrefs;
   const { data, error } = await supabase
     .from('profiles')
     .update(row)
