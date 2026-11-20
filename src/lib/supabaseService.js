@@ -458,6 +458,21 @@ export async function confirmPayment(paymentId) {
   if (error) fail(error);
 }
 
+/**
+ * Desfaz a confirmação de um pagamento (quem recebeu ou o admin): ele volta
+ * para "aguardando confirmação", onde dá para confirmar de novo ou recusar.
+ */
+export async function reopenPayment(paymentId) {
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ status: 'pending' })
+    .eq('id', paymentId)
+    .select('id');
+  if (error) fail(error);
+  // o RLS não dá erro quando bloqueia: só não atualiza nenhuma linha
+  if (!data?.length) throw new Error('Só quem recebeu o pagamento ou o admin pode desfazer.');
+}
+
 /** Recusar (recebedor) ou cancelar (pagador) um pagamento pendente. */
 export async function declinePayment(paymentId) {
   const { error } = await supabase.from('payments').delete().eq('id', paymentId);

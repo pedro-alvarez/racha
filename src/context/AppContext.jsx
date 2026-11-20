@@ -123,6 +123,14 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
+  const reopenPayment = useCallback(
+    async (paymentId) => {
+      await dataService.reopenPayment(paymentId);
+      await refreshAll();
+    },
+    [refreshAll]
+  );
+
   const settleDebt = useCallback(
     async (tripId, payment) => {
       await dataService.settleDebt(tripId, payment);
@@ -200,6 +208,7 @@ export function AppProvider({ children }) {
       settleDebt,
       confirmPayment,
       declinePayment,
+      reopenPayment,
       createTrip,
       joinTrip,
       deleteTrip,
@@ -226,6 +235,7 @@ export function AppProvider({ children }) {
       settleDebt,
       confirmPayment,
       declinePayment,
+      reopenPayment,
       createTrip,
       joinTrip,
       deleteTrip,
