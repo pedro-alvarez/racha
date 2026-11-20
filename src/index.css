@@ -6,6 +6,13 @@
   html {
     -webkit-tap-highlight-color: transparent;
   }
+  /* toque responde na hora: sem espera de "toque duplo" e com retorno visual imediato */
+  a, button, input, select, textarea, label, [role='button'], [role='checkbox'], [role='switch'] {
+    touch-action: manipulation;
+  }
+  button:not(:disabled):active, a:active, [role='button']:active, [role='checkbox']:active {
+    filter: brightness(0.85);
+  }
   body {
     @apply bg-ink text-white font-sans antialiased;
   }
@@ -38,21 +45,17 @@
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: none; }
 }
-.page-enter { animation: pageIn 0.28s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.page-enter { animation: pageIn 0.16s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
-.stagger > * { animation: fadeUp 0.35s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
-.stagger > *:nth-child(1) { animation-delay: 0.02s; }
-.stagger > *:nth-child(2) { animation-delay: 0.06s; }
-.stagger > *:nth-child(3) { animation-delay: 0.1s; }
-.stagger > *:nth-child(4) { animation-delay: 0.14s; }
-.stagger > *:nth-child(5) { animation-delay: 0.18s; }
-.stagger > *:nth-child(6) { animation-delay: 0.22s; }
-.stagger > *:nth-child(7) { animation-delay: 0.26s; }
-.stagger > *:nth-child(n + 8) { animation-delay: 0.3s; }
+.stagger > * { animation: fadeUp 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.stagger > *:nth-child(2) { animation-delay: 0.02s; }
+.stagger > *:nth-child(3) { animation-delay: 0.04s; }
+.stagger > *:nth-child(4) { animation-delay: 0.06s; }
+.stagger > *:nth-child(n + 5) { animation-delay: 0.08s; }
 
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(48px); }
@@ -62,15 +65,15 @@
   from { opacity: 0; transform: translateX(-48px); }
   to { opacity: 1; transform: none; }
 }
-.slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
-.slide-in-left { animation: slideInLeft 0.3s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.slide-in-right { animation: slideInRight 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.slide-in-left { animation: slideInLeft 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
 @keyframes fabPop {
   0% { transform: scale(0) rotate(-90deg); }
   70% { transform: scale(1.12) rotate(8deg); }
   100% { transform: scale(1) rotate(0); }
 }
-.fab-pop { animation: fabPop 0.4s cubic-bezier(0.2, 0.7, 0.3, 1.4) 0.15s backwards; }
+.fab-pop { animation: fabPop 0.3s cubic-bezier(0.2, 0.7, 0.3, 1.4) backwards; }
 
 /* ---------- splash de abertura ---------- */
 /* 1) ícone dá um "pop" no centro */
@@ -132,9 +135,9 @@
   from { transform: translateY(100%); }
   to { transform: none; }
 }
-.sheet-up { animation: sheetUp 0.32s cubic-bezier(0.2, 0.7, 0.3, 1); }
+.sheet-up { animation: sheetUp 0.22s cubic-bezier(0.2, 0.7, 0.3, 1); }
 @keyframes overlayIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.overlay-in { animation: overlayIn 0.2s both; }
+.overlay-in { animation: overlayIn 0.15s both; }

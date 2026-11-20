@@ -51,12 +51,11 @@ export function AppProvider({ children }) {
     const mine = allTrips.filter((t) => t.members.includes(user.id));
     const open = allTrips.filter((t) => t.type === 'role' && !t.members.includes(user.id));
 
-    const expensesEntries = await Promise.all(
-      mine.map(async (t) => [t.id, await dataService.getExpenses(t.id)])
-    );
-    const paymentsEntries = await Promise.all(
-      mine.map(async (t) => [t.id, await dataService.getPayments(t.id)])
-    );
+    // despesas e pagamentos de todas as viagens ao mesmo tempo
+    const [expensesEntries, paymentsEntries] = await Promise.all([
+      Promise.all(mine.map(async (t) => [t.id, await dataService.getExpenses(t.id)])),
+      Promise.all(mine.map(async (t) => [t.id, await dataService.getPayments(t.id)])),
+    ]);
     setCurrentUser(user);
     setUsers(allUsers);
     setTrips(mine);
@@ -137,6 +136,17 @@ export function AppProvider({ children }) {
     };
   }, [loggedIn, backgroundLoad]);
 
+  // depois de uma mudança feita aqui: avisa os outros e recarrega em segundo
+  // plano. A tela já foi atualizada na hora (otimista) e não espera a recarga.
+  const refreshSoon = useCallback(() => {
+    dataService.notifyChange();
+    backgroundLoad();
+  }, [backgroundLoad]);
+
+  const patchExpenses = (tripId, fn) => setExpensesByTrip((prev) => ({ ...prev, [tripId]: fn(prev[tripId] ?? []) }));
+  const patchPayments = (fn) =>
+    setPaymentsByTrip((prev) => Object.fromEntries(Object.entries(prev).map(([k, list]) => [k, fn(list)])));
+
   const userById = useCallback(
     (id) => users.find((u) => u.id === id) ?? { id, name: '???', color: '#666' },
     [users]
@@ -147,36 +157,48 @@ export function AppProvider({ children }) {
   const addExpense = useCallback(
     async (tripId, expense) => {
       const created = await dataService.addExpense(tripId, expense);
-      if (created?.id) dataService.notify('despesa', created.id);
-      await refreshAll();
+      if (created?.id) {
+        patchExpenses(tripId, (list) => [...list, created]);
+        dataService.notify('despesa', created.id);
+      }
+      refreshSoon();
     },
-    [refreshAll]
+    [refreshSoon]
   );
 
   const updateExpense = useCallback(
     async (expenseId, expense, changes) => {
       await dataService.updateExpense(expenseId, expense, changes);
+      setExpensesByTrip((prev) =>
+        Object.fromEntries(
+          Object.entries(prev).map(([k, list]) => [k, list.map((e) => (e.id === expenseId ? { ...e, ...expense, id: expenseId } : e))])
+        )
+      );
       dataService.notify('edicao', expenseId);
-      await refreshAll();
+      refreshSoon();
     },
-    [refreshAll]
+    [refreshSoon]
   );
 
   const deleteExpense = useCallback(
     async (expenseId) => {
       await dataService.deleteExpense(expenseId);
-      await refreshAll();
+      setExpensesByTrip((prev) =>
+        Object.fromEntries(Object.entries(prev).map(([k, list]) => [k, list.filter((e) => e.id !== expenseId)]))
+      );
+      refreshSoon();
     },
-    [refreshAll]
+    [refreshSoon]
   );
 
   const confirmPayment = useCallback(
     async (paymentId) => {
       await dataService.confirmPayment(paymentId);
+      patchPayments((list) => list.map((p) => (p.id === paymentId ? { ...p, status: 'confirmed' } : p)));
       dataService.notify('confirmacao', paymentId);
-      await refreshAll();
+      refreshSoon();
     },
-    [refreshAll]
+    [refreshSoon]
   );
 
   const declinePayment = useCallback(
@@ -184,35 +206,40 @@ export function AppProvider({ children }) {
       // guarda quem/quanto antes de apagar, para avisar o outro lado
       const p = Object.values(paymentsByTrip).flat().find((x) => x.id === paymentId);
       await dataService.declinePayment(paymentId);
+      patchPayments((list) => list.filter((x) => x.id !== paymentId));
       if (p) dataService.notify('recusa', paymentId, { from: p.from, to: p.to, amount: p.amount, tripId: p.tripId });
-      await refreshAll();
+      refreshSoon();
     },
-    [refreshAll, paymentsByTrip]
+    [refreshSoon, paymentsByTrip]
   );
 
   const reopenPayment = useCallback(
     async (paymentId) => {
       await dataService.reopenPayment(paymentId);
-      await refreshAll();
+      patchPayments((list) => list.map((p) => (p.id === paymentId ? { ...p, status: 'pending' } : p)));
+      refreshSoon();
     },
-    [refreshAll]
+    [refreshSoon]
   );
 
   const attachReceipt = useCallback(
     async (paymentId, tripId, file) => {
       await dataService.attachReceipt(paymentId, tripId, file);
-      await refreshAll();
+      refreshSoon();
     },
-    [refreshAll]
+    [refreshSoon]
   );
 
   const settleDebt = useCallback(
     async (tripId, payment) => {
       const created = await dataService.settleDebt(tripId, payment);
-      if (created?.id) dataService.notify('pagamento', created.id);
-      await refreshAll();
+      if (created?.id) {
+        setPaymentsByTrip((prev) => ({ ...prev, [tripId]: [...(prev[tripId] ?? []), created] }));
+        dataService.notify('pagamento', created.id);
+      }
+      refreshSoon();
     },
-    [refreshAll]
+    [refreshSoon]
   );
 
   const createTrip = useCallback(
@@ -244,10 +271,14 @@ export function AppProvider({ children }) {
 
   const updateUser = useCallback(
     async (userId, patch) => {
-      await dataService.updateUser(userId, patch);
-      await refreshAll();
+      const updated = await dataService.updateUser(userId, patch);
+      if (updated) {
+        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, ...updated } : u)));
+        setCurrentUser((prev) => (prev?.id === userId ? { ...prev, ...updated } : prev));
+      }
+      refreshSoon();
     },
-    [refreshAll]
+    [refreshSoon]
   );
 
   const joinTrip = useCallback(
