@@ -8,7 +8,7 @@ import * as dataService from '../lib/dataService';
 import { useApp } from '../context/AppContext';
 
 export default function SecurityPage() {
-  const { currentUser } = useApp();
+  const { currentUser, refreshAll } = useApp();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -24,6 +24,7 @@ export default function SecurityPage() {
     setSaving(true);
     try {
       await dataService.changePassword(password);
+      refreshAll(); // tira o aviso de senha provisória
       setDone(true);
       setPassword('');
       setConfirm('');

@@ -4,7 +4,7 @@
  * Desktop (>= md): sidebar fixa à esquerda + conteúdo em área central.
  */
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Users, ListTodo, CircleUserRound, Wallet, Hourglass, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, Users, ListTodo, CircleUserRound, Wallet, Hourglass, LogOut, KeyRound } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Avatar from './Avatar';
 
@@ -106,6 +106,19 @@ export default function Layout() {
       {/* Conteúdo */}
       <div className="flex-1 min-w-0">
         <main className="max-w-lg md:max-w-3xl mx-auto px-5 md:px-10 pt-4 pb-28 md:pb-12 md:pt-8">
+          {/* entrou com senha provisória: pede para criar a própria */}
+          {currentUser.tempPassword && location.pathname !== '/seguranca' && (
+            <button
+              onClick={() => navigate('/seguranca')}
+              className="w-full mb-4 card-flat border-amber-400/30 p-3.5 flex items-center gap-3 text-left"
+            >
+              <KeyRound size={18} className="text-amber-300 shrink-0" />
+              <span className="flex-1 text-sm">
+                <b>Você entrou com uma senha provisória.</b>{' '}
+                <span className="text-muted-light">Toque aqui para criar a sua.</span>
+              </span>
+            </button>
+          )}
           {/* key na rota faz cada tela entrar com animação */}
           <div key={location.pathname} className="page-enter">
             <Outlet />

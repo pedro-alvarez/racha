@@ -14,6 +14,7 @@ import SplashScreen from './components/SplashScreen';
 import AutoUpdate from './components/AutoUpdate';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import OnboardingPage from './pages/OnboardingPage';
 import TripMembersPage from './pages/TripMembersPage';
 import OverviewPage from './pages/OverviewPage';
@@ -44,6 +45,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/criar-conta" element={<SignUpPage />} />
+          <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
           <Route path="/bem-vindo" element={<OnboardingPage />} />
           <Route element={<Layout />}>
             <Route path="/" element={<OverviewPage />} />

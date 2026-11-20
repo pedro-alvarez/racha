@@ -3,6 +3,7 @@
  * - Aprovações pendentes (aprovar / recusar cadastros)
  * - Membros do app (com remoção)
  * - Todos os convites enviados (de qualquer pessoa), revogáveis
+ * - Pedidos de "esqueci minha senha" e senha provisória para qualquer membro
  */
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -10,6 +11,9 @@ import {
   ArrowLeft,
   Check,
   Clock,
+  Copy,
+  KeyRound,
+  MessageCircle,
   Mail,
   ShieldCheck,
   Trash2,
@@ -38,6 +42,9 @@ export default function AdminPage() {
 
   const [pending, setPending] = useState([]);
   const [invites, setInvites] = useState([]);
+  const [resets, setResets] = useState([]);
+  const [tempPass, setTempPass] = useState(null); // { user, senha }
+  const [copied, setCopied] = useState(false);
   const [acting, setActing] = useState(null);
   const [error, setError] = useState('');
 
@@ -47,6 +54,7 @@ export default function AdminPage() {
     if (!isAdmin) return;
     dataService.getPendingUsers().then(setPending).catch(() => setPending([]));
     dataService.getInvites().then(setInvites).catch(() => setInvites([]));
+    dataService.getPasswordRequests().then(setResets).catch(() => setResets([]));
   }, [isAdmin]);
 
   if (!isAdmin) return <Navigate to="/" replace />;
@@ -86,6 +94,29 @@ export default function AdminPage() {
       await refreshAll();
     });
 
+  // senha provisória: a atual deixa de valer; a pessoa troca em Conta → Segurança
+  const makeTempPassword = (u) =>
+    run(u.id, async () => {
+      if (!confirm(`Criar uma senha provisória para ${u.name}? A senha atual deixa de funcionar.`)) return;
+      const senha = await dataService.adminTempPassword(u.id);
+      setResets((prev) => prev.filter((r) => r.userId !== u.id));
+      setCopied(false);
+      setTempPass({ user: u, senha });
+    });
+
+  const site = `${window.location.origin}${import.meta.env.BASE_URL}`;
+  const whatsText = tempPass
+    ? `Oi ${tempPass.user.name.split(' ')[0]}! Sua senha provisória do Racha é: ${tempPass.senha}\nEntre em ${site} e crie a sua em Conta → Segurança.`
+    : '';
+  const copyTemp = async () => {
+    try {
+      await navigator.clipboard.writeText(tempPass.senha);
+      setCopied(true);
+    } catch {
+      /* sem área de transferência */
+    }
+  };
+
   const revoke = (inv) =>
     run(inv.id, async () => {
       if (!confirm(`Revogar o convite de ${inv.email}?`)) return;
@@ -113,6 +144,66 @@ export default function AdminPage() {
         <p className="mt-4 text-sm text-accent-bright bg-accent/10 border border-accent/30 rounded-2xl px-4 py-3">
           {error}
         </p>
+      )}
+
+      {/* senha provisória recém-criada */}
+      {tempPass && (
+        <section className="card-gradient p-5 mt-5 border border-accent/30">
+          <p className="label-caps">Senha provisória de {tempPass.user.name.split(' ')[0]}</p>
+          <p className="mt-2 text-3xl font-extrabold tracking-widest font-mono select-all">{tempPass.senha}</p>
+          <p className="mt-1 text-xs text-muted-light">
+            Mande para a pessoa. Ela entra com essa senha e cria a dela em Conta → Segurança.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={copyTemp}
+              className={`flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition ${
+                copied ? 'bg-positive/20 text-positive' : 'bg-white/10 hover:bg-white/15'
+              }`}
+            >
+              {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? 'Copiada!' : 'Copiar'}
+            </button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(whatsText)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 py-2.5 rounded-2xl bg-positive/15 text-positive text-sm font-bold flex items-center justify-center gap-2 hover:bg-positive/25 transition"
+            >
+              <MessageCircle size={15} /> WhatsApp
+            </a>
+          </div>
+          <button onClick={() => setTempPass(null)} className="mt-3 w-full text-xs font-semibold text-muted hover:text-white">
+            Fechar
+          </button>
+        </section>
+      )}
+
+      {/* pedidos de nova senha */}
+      {resets.length > 0 && (
+        <>
+          <p className="label-caps mt-7">Esqueceram a senha ({resets.length})</p>
+          <ul className="mt-3 space-y-2.5">
+            {resets.map((r) => {
+              const u = userById(r.userId);
+              return (
+                <li key={r.userId} className="card-flat p-4 flex items-center gap-3 border-amber-400/25">
+                  <Avatar user={u} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{u.name}</p>
+                    <p className="text-[11px] text-muted truncate">pediu {formatRelative(r.requestedAt)}</p>
+                  </div>
+                  <button
+                    onClick={() => makeTempPassword(u)}
+                    disabled={acting === u.id}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-accent/15 text-accent-bright hover:bg-accent/25 transition disabled:opacity-50 shrink-0"
+                  >
+                    <KeyRound size={13} /> Criar senha
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       {/* aprovações */}
@@ -171,6 +262,17 @@ export default function AdminPage() {
                   <p className="text-[11px] text-muted truncate">{u.email}</p>
                 </div>
               </button>
+              {!isMe && (
+                <button
+                  onClick={() => makeTempPassword(u)}
+                  disabled={acting === u.id}
+                  className="w-9 h-9 rounded-full bg-white/5 text-muted flex items-center justify-center hover:text-white hover:bg-white/10 transition disabled:opacity-50 shrink-0"
+                  aria-label={`Senha provisória para ${u.name}`}
+                  title="Criar senha provisória"
+                >
+                  <KeyRound size={15} />
+                </button>
+              )}
               {!isMe && u.role !== 'admin' && (
                 <button
                   onClick={() => remove(u)}

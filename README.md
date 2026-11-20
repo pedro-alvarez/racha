@@ -33,6 +33,7 @@ link de um convite. A conta nova espera a aprovação do admin do grupo.
 | **Acertar contas** | Card de saldo → "Acertar contas" → **Pagar** | Paga tudo, por despesa ou outro valor; mostra a chave Pix de quem recebe |
 | **Comprovante** | Janela de pagamento → **Anexar comprovante** (ou depois, no pagamento pendente) | Foto, print ou PDF; quem recebe toca em **Ver comprovante** antes de confirmar |
 | **Avisos no celular** | Conta → **Avisos no celular** | Ativa as notificações no aparelho e escolhe o que receber (despesas, edições, pagamentos, confirmações) e o silêncio à noite. No iPhone, só com o Racha na tela de início |
+| **Esqueci minha senha** | Login → **Esqueci minha senha** | O admin recebe um aviso, cria uma senha provisória em Administração e manda pelo WhatsApp; a pessoa troca em Conta → Segurança |
 | **Confirmar pagamento** | Conta → Notificações | Quem recebeu confirma ou recusa o pagamento |
 | **Rolê aberto** | Visão Geral → rolê aberto → **Eu vou! Entrar no rolê** | O rolê passa a aparecer entre os seus |
 | **Convidar amigo** | Amigos → digite um e-mail | E-mail já cadastrado vira amizade; e-mail novo recebe um convite com link |
@@ -79,7 +80,7 @@ dependências, roda `npm run build` e publica a pasta `dist/`.
 
 O esquema está em `supabase/`. Num projeto Supabase novo, rode no SQL Editor,
 nesta ordem: `schema.sql` → `upgrade-v2.sql` → `upgrade-v3.sql` →
-`upgrade-v4.sql` → `upgrade-v5.sql` → `upgrade-v6.sql` → `upgrade-v7.sql` → `upgrade-v8.sql` → `upgrade-v9.sql` (comprovantes) → `upgrade-v10.sql` (notificações) → `upgrade-v11.sql` (chaves das notificações, ver o arquivo). Os modelos de e-mail de convite estão em
+`upgrade-v4.sql` → `upgrade-v5.sql` → `upgrade-v6.sql` → `upgrade-v7.sql` → `upgrade-v8.sql` → `upgrade-v9.sql` (comprovantes) → `upgrade-v10.sql` (notificações) → `upgrade-v11.sql` (chaves das notificações, ver o arquivo) → `upgrade-v12.sql` (esqueci minha senha). Os modelos de e-mail de convite estão em
 `supabase/email-templates.md`. Depois, troque a URL e a chave em
 `src/lib/supabaseClient.js`.
 
