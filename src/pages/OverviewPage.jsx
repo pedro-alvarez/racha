@@ -4,8 +4,8 @@
  * - setas laterais no desktop
  * - chips com nome das viagens (em vez de bolinhas minúsculas)
  */
-import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronRight, PartyPopper, PlusCircle, Receipt } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
@@ -23,6 +23,10 @@ export default function OverviewPage() {
   const [direction, setDirection] = useState(0); // -1 esquerda, 1 direita
   const touchStart = useRef(null);
   const activeChipRef = useRef(null);
+  // aviso do celular "fulano diz que te pagou" abre direto as pendências (#/?pendencias=1)
+  const [params, setParams] = useSearchParams();
+  const abrirPendencias = params.get('pendencias') === '1';
+  const limparParam = useCallback(() => setParams({}, { replace: true }), [setParams]);
 
   useEffect(() => {
     if (routeTripId && routeTripId !== selectedTripId) setSelectedTripId(routeTripId);
@@ -83,7 +87,7 @@ export default function OverviewPage() {
           onPointerUp={(e) => e.pointerType === 'mouse' && onEnd(e.clientX, e.clientY)}
           style={{ touchAction: 'pan-y' }}
         >
-          <TripHeader trip={trip} />
+          <TripHeader trip={trip} abrirPendencias={abrirPendencias} onAbriuPendencias={limparParam} />
           <BalanceCard tripId={trip.id} balance={myBalance} />
         </div>
       </div>

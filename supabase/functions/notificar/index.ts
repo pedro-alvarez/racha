@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
     if (tipo === 'pagamento' && p.status === 'pending') {
       avisos.push({
         para: p.to_user, categoria: 'pagamentos', title: `${nome(p.from_user)} diz que te pagou ${reais(p.amount)}`,
-        body: `Toque para conferir e confirmar · ${viagem}`, url, tag: `pagamento-${p.id}`,
+        body: `Toque para conferir e confirmar · ${viagem}`, url: `${SITE}#/?pendencias=1`, tag: `pagamento-${p.id}`,
       });
     } else {
       // confirmado: avisa quem pagou (quem recebeu registrou ou confirmou)
