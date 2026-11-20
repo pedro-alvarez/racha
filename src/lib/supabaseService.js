@@ -42,7 +42,10 @@ const mapTrip = (row) => ({
 });
 
 const mapExpense = (row) => {
-  const parts = row.expense_participants ?? [];
+  // ordem fixa (pelo id): o centavo que sobra numa divisão vai para os
+  // primeiros da lista, e o banco nem sempre devolve as linhas na mesma ordem.
+  // Sem isso, dois celulares podiam calcular partes com 1 centavo de diferença.
+  const parts = [...(row.expense_participants ?? [])].sort((a, b) => (a.user_id < b.user_id ? -1 : a.user_id > b.user_id ? 1 : 0));
   const expense = {
     id: row.id,
     tripId: row.trip_id,
