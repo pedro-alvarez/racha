@@ -11,6 +11,7 @@ import { AppProvider } from './context/AppContext';
 import { ExpenseModalProvider } from './context/ExpenseModalContext';
 import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
+import AutoUpdate from './components/AutoUpdate';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import OnboardingPage from './pages/OnboardingPage';
@@ -37,6 +38,7 @@ export default function App() {
     <AppProvider>
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       <HashRouter>
+        <AutoUpdate />
         <ExpenseModalProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
