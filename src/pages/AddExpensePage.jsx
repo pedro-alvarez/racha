@@ -65,6 +65,10 @@ export default function AddExpensePage() {
     setParticipants(next);
   };
 
+  // marcar todos de uma vez / desmarcar todos
+  const allSelected = members.length > 0 && members.every((m) => participants.has(m.id));
+  const toggleAll = () => setParticipants(allSelected ? new Set() : new Set(members.map((m) => m.id)));
+
   // Valores e %: quem ficou em branco divide o resto por igual (fillRemainder)
   const buildShares = () => {
     if (splitType === SPLIT_TYPES.EQUAL) return {};
@@ -263,7 +267,20 @@ export default function AddExpensePage() {
             </div>
           </div>
 
-          <ul className="mt-3 space-y-2">
+          <div className="mt-3 flex items-center justify-between">
+            <p className="text-xs text-muted">
+              {participants.size} de {members.length} {members.length === 1 ? 'pessoa' : 'pessoas'}
+            </p>
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 border border-white/10 text-muted-light hover:text-white transition"
+            >
+              {allSelected ? 'Desmarcar todos' : 'Marcar todos'}
+            </button>
+          </div>
+
+          <ul className="mt-2 space-y-2">
             {members.map((m) => {
               const active = participants.has(m.id);
               return (
