@@ -12,6 +12,7 @@ import { ArrowRight, Check, Copy, QrCode, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCentsAbs, formatDate, firstName, maskCents, parseToCents } from '../lib/format';
 import Avatar from './Avatar';
+import { expenseCoverage } from '../lib/splitEngine';
 
 export default function PaymentModal({ transfer, tripId, onClose }) {
   const { userById, currentUser, settleDebt, confirmPayment, paymentsByTrip } = useApp();
@@ -33,20 +34,28 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
   const between = (paymentsByTrip?.[tripId] ?? []).filter((p) => p.from === transfer.from && p.to === transfer.to);
   const pending = between.filter((p) => p.status === 'pending');
   const pendingSum = pending.reduce((s, p) => s + p.amount, 0);
-  const confirmedIds = new Set(between.filter((p) => p.status !== 'pending').flatMap((p) => p.expenseIds ?? []));
-  const pendingIds = new Set(pending.flatMap((p) => p.expenseIds ?? []));
   const nameOf = (id) => (id === currentUser?.id ? 'você' : firstName(userById(id).name));
   const descriptionOf = Object.fromEntries((transfer.items ?? []).map((it) => [it.id, it.description]));
 
-  // o que ainda falta pagar, descontando o que já foi registrado e aguarda confirmação
+  // o que ainda falta pagar, descontando o que já foi registrado e aguarda confirmação.
+  // Nenhum jeito de pagar passa disso: evita pagar duas vezes a mesma coisa.
   const open = Math.max(0, transfer.amount - pendingSum);
-  const expenseRows = (transfer.items ?? []).filter(
-    (it) => it.kind === 'expense' && it.amount > 0 && it.owedBy === transfer.from && !confirmedIds.has(it.id)
-  );
-  const payable = expenseRows.filter((it) => !pendingIds.has(it.id));
-  const selectedSum = payable.filter((it) => selected.has(it.id)).reduce((s, it) => s + it.amount, 0);
+  // quanto de cada despesa já foi pago "por despesa": só confirmados e com os pendentes
+  const covConfirmed = expenseCoverage(transfer);
+  const covAll = expenseCoverage(transfer, pending);
+  const expenseRows = (transfer.items ?? [])
+    .filter((it) => it.kind === 'expense' && it.amount > 0 && covConfirmed[it.id]?.left > 0)
+    .map((it) => ({
+      ...it,
+      left: covConfirmed[it.id].left, // falta pagar desta despesa (confirmados)
+      payable: Math.max(0, covAll[it.id].left), // descontando também os pendentes
+      partial: covConfirmed[it.id].paid > 0,
+    }));
+  const selectedSum = expenseRows.filter((it) => selected.has(it.id)).reduce((s, it) => s + it.payable, 0);
   const customAmount = parseToCents(customText);
-  const amount = mode === 'all' ? open : mode === 'expenses' ? selectedSum : customAmount;
+  const amount = mode === 'all' ? open : mode === 'expenses' ? Math.min(selectedSum, open) : customAmount;
+  const capped = mode === 'expenses' && selectedSum > open;
+  const offsets = (transfer.items ?? []).filter((it) => it.kind === 'expense' && it.amount < 0);
 
   const handleConfirmPending = async (paymentId) => {
     setSaving(true);
@@ -83,6 +92,7 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
 
   const handleSubmit = async () => {
     setError('');
+    if (open <= 0) return setError(`Já foi registrado tudo; falta ${firstName(to.name)} confirmar.`);
     if (mode === 'expenses' && selected.size === 0) return setError('Escolha ao menos uma despesa.');
     if (amount <= 0) return setError('Informe o valor do pagamento.');
     if (mode === 'custom' && amount > open)
@@ -94,7 +104,7 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
         to: transfer.to,
         amount,
         note: note.trim(),
-        expenseIds: mode === 'expenses' ? [...selected] : [],
+        expenseIds: mode === 'expenses' ? expenseRows.filter((it) => selected.has(it.id) && it.payable > 0).map((it) => it.id) : [],
       });
       onClose();
     } catch (err) {
@@ -175,6 +185,14 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
             <p className="mt-3 text-[11px] text-muted">
               Esse valor ainda conta na dívida até ser confirmado. Falta pagar {formatCentsAbs(open)}.
             </p>
+            {pendingSum > transfer.amount && (
+              <p className="mt-2 text-[11px] font-semibold text-amber-300">
+                Os pagamentos aguardando somam {formatCentsAbs(pendingSum)}, mais do que a dívida (
+                {formatCentsAbs(transfer.amount)}). Se algum foi registrado duas vezes,{' '}
+                {iAmReceiver ? 'recuse o repetido' : 'cancele o repetido'} em “Aguardando confirmação”, no fim da tela
+                de acerto.
+              </p>
+            )}
           </div>
         )}
 
@@ -209,7 +227,7 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
               <ul className="space-y-2">
                 {expenseRows.map((it) => {
                   const on = selected.has(it.id);
-                  const waiting = pendingIds.has(it.id);
+                  const waiting = it.payable <= 0;
                   return (
                     <li key={it.id}>
                       <button
@@ -230,21 +248,32 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
                           <span className="block text-[11px] text-muted">
                             {formatDate(String(it.date).slice(0, 10))} · parte de{' '}
                             {transfer.from === currentUser?.id ? 'você' : firstName(from.name)}
-                            {waiting && <span className="text-amber-300"> · paga, aguardando confirmação</span>}
+                            {it.partial && <span> · parte já paga</span>}
+                            {waiting ? (
+                              <span className="text-amber-300"> · paga, aguardando confirmação</span>
+                            ) : (
+                              it.payable < it.left && (
+                                <span className="text-amber-300"> · {formatCentsAbs(it.left - it.payable)} aguardando confirmação</span>
+                              )
+                            )}
                           </span>
                         </span>
-                        <span className="text-sm font-bold">{formatCentsAbs(it.amount)}</span>
+                        <span className="text-sm font-bold">{formatCentsAbs(waiting ? it.left : it.payable)}</span>
                       </button>
                     </li>
                   );
                 })}
               </ul>
             )}
-            {selectedSum > transfer.amount && (
+            {capped && (
               <p className="mt-2 text-xs text-muted">
-                Passa do total da dívida porque {firstName(to.name)} também tem parte em despesas que{' '}
-                {transfer.from === currentUser?.id ? 'você pagou' : `${firstName(from.name)} pagou`}. A diferença
-                fica como crédito para {transfer.from === currentUser?.id ? 'você' : firstName(from.name)}.
+                As despesas somam {formatCentsAbs(selectedSum)}, mas falta pagar {formatCentsAbs(open)}
+                {offsets.length > 0 &&
+                  `: ${firstName(to.name)} também tem parte em despesas que ${
+                    transfer.from === currentUser?.id ? 'você pagou' : `${firstName(from.name)} pagou`
+                  } (${offsets.map((it) => it.description).join(', ')}), e isso já desconta`}
+                {pendingSum > 0 && `${offsets.length > 0 ? ',' : ':'} já tem ${formatCentsAbs(pendingSum)} aguardando confirmação`}
+                . O pagamento fica em {formatCentsAbs(open)}.
               </p>
             )}
           </div>
@@ -305,12 +334,14 @@ export default function PaymentModal({ transfer, tripId, onClose }) {
 
         <button
           onClick={handleSubmit}
-          disabled={saving}
+          disabled={saving || open <= 0}
           className="mt-4 w-full py-3.5 rounded-2xl bg-gradient-to-br from-accent to-accent-bright font-bold disabled:opacity-50"
         >
           {saving
             ? 'Registrando…'
-            : iAmReceiver
+            : open <= 0
+              ? 'Nada a pagar agora'
+              : iAmReceiver
               ? 'Confirmar recebimento'
               : iAmPayer
                 ? `Pagar ${formatCentsAbs(amount)}`

@@ -5,6 +5,7 @@ import {
   pairwiseDebts,
   validateExpense,
   fillRemainder,
+  expenseCoverage,
   SPLIT_TYPES,
 } from './splitEngine';
 
@@ -180,5 +181,60 @@ describe('pairwiseDebts com justificativa', () => {
     expect(pedro.items.map((i) => [i.kind, i.amount])).toEqual([['expense', 3000], ['payment', -1000]]);
 
     for (const d of debts) expect(d.items.reduce((s, i) => s + i.amount, 0)).toBe(d.amount);
+  });
+});
+
+describe('dívidas cruzadas se descontam (caso Jorje x André)', () => {
+  // André pagou a padaria (Jorje tem parte); Jorje pagou a diarista (André tem parte)
+  const sete = ['pedro', 'akira', 'natan', 'jorje', 'miguel', 'andre', 'clebinho'];
+  const expenses = [
+    { id: 'padaria', description: 'Padaria', amount: 8300, paidBy: 'andre', splitType: SPLIT_TYPES.EQUAL, participants: sete, date: '2026-11-19' },
+    { id: 'diarista', description: 'Diarista', amount: 20000, paidBy: 'jorje', splitType: SPLIT_TYPES.EQUAL, participants: [...sete, 'lod'], date: '2026-11-22' },
+  ];
+  const par = pairwiseDebts(expenses, []).find((d) => [d.from, d.to].sort().join() === 'andre,jorje');
+
+  it('quem deve é André: 25,00 da diarista menos 11,86 da padaria', () => {
+    expect(par.from).toBe('andre');
+    expect(par.to).toBe('jorje');
+    expect(par.amount).toBe(2500 - 1186);
+  });
+
+  it('a justificativa mostra as duas despesas, com a padaria descontando', () => {
+    const porId = Object.fromEntries(par.items.map((it) => [it.id, it]));
+    expect(porId.diarista).toMatchObject({ amount: 2500, paidBy: 'jorje', owedBy: 'andre' });
+    expect(porId.padaria).toMatchObject({ amount: -1186, paidBy: 'andre', owedBy: 'jorje' });
+  });
+});
+
+describe('expenseCoverage', () => {
+  const debt = {
+    from: 'pedro',
+    to: 'natan',
+    items: [
+      { kind: 'expense', id: 'canoa', amount: 7429 },
+      { kind: 'expense', id: 'mercado', amount: 754 },
+      { kind: 'expense', id: 'padaria', amount: -1186 },
+    ],
+  };
+
+  it('pagamento menor que a parte deixa a despesa parcial', () => {
+    const cov = expenseCoverage({ ...debt, items: [...debt.items, { kind: 'payment', from: 'pedro', to: 'natan', amount: -6508, expenseIds: ['canoa'] }] });
+    expect(cov.canoa).toEqual({ share: 7429, paid: 6508, left: 921 });
+    expect(cov.mercado.left).toBe(754);
+    expect(cov.padaria).toBeUndefined(); // é desconto, não algo que o devedor paga
+  });
+
+  it('reparte um pagamento entre as despesas citadas e soma os pendentes', () => {
+    const cov = expenseCoverage(debt, [{ from: 'pedro', to: 'natan', amount: 7429 + 500, expenseIds: ['canoa', 'mercado'] }]);
+    expect(cov.canoa.left).toBe(0);
+    expect(cov.mercado).toEqual({ share: 754, paid: 500, left: 254 });
+  });
+
+  it('ignora pagamentos sem despesa e os de quem não é o devedor', () => {
+    const cov = expenseCoverage(debt, [
+      { from: 'pedro', to: 'natan', amount: 7429, expenseIds: [] },
+      { from: 'natan', to: 'pedro', amount: 7429, expenseIds: ['canoa'] },
+    ]);
+    expect(cov.canoa.left).toBe(7429);
   });
 });

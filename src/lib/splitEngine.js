@@ -239,3 +239,38 @@ export function pairwiseDebts(expenses = [], payments = []) {
 
   return result.sort((x, y) => y.amount - x.amount);
 }
+
+/**
+ * Quanto de cada despesa de uma dívida já foi pago "por despesa".
+ *
+ * Considera as despesas que o devedor deve (itens com amount > 0) e reparte
+ * cada pagamento do devedor que cite despesas (expenseIds) entre elas, na
+ * ordem citada, até a parte de cada uma. Assim um pagamento menor que a parte
+ * (por exemplo, quando a despesa foi editada depois) deixa a despesa parcial.
+ *
+ * @param {Object} debt   uma dívida de pairwiseDebts ({ from, to, items })
+ * @param {Array}  extras pagamentos a somar aos da dívida (ex.: os pendentes)
+ * @returns {Object} { [expenseId]: { share, paid, left } }
+ */
+export function expenseCoverage(debt, extras = []) {
+  const cov = {};
+  for (const it of debt.items ?? []) {
+    if (it.kind === 'expense' && it.amount > 0) cov[it.id] = { share: it.amount, paid: 0 };
+  }
+  const payments = [
+    ...(debt.items ?? []).filter((it) => it.kind === 'payment' && it.from === debt.from),
+    ...extras.filter((p) => p.from === debt.from),
+  ];
+  for (const p of payments) {
+    let rest = Math.abs(p.amount);
+    for (const id of p.expenseIds ?? []) {
+      const c = cov[id];
+      if (!c || rest <= 0) continue;
+      const take = Math.min(rest, c.share - c.paid);
+      c.paid += take;
+      rest -= take;
+    }
+  }
+  for (const c of Object.values(cov)) c.left = c.share - c.paid;
+  return cov;
+}
