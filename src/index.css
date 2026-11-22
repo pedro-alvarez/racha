@@ -12,6 +12,7 @@
   }
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%; /* iPhone deitado não aumenta a letra sozinho */
   }
   /* toque responde na hora: sem espera de "toque duplo" e com retorno visual imediato */
   a, button, input, select, textarea, label, [role='button'], [role='checkbox'], [role='switch'] {
@@ -56,14 +57,12 @@
 }
 
 /* iPhone dá zoom ao tocar num campo com letra menor que 16px (e não volta).
-   No celular os campos ficam com 16px; no computador seguem como estão. */
-@media (pointer: coarse) {
-  input, textarea, select {
-    font-size: max(16px, 1em);
-  }
-  input:is(.text-xs, .text-sm), textarea:is(.text-xs, .text-sm), select:is(.text-xs, .text-sm) {
-    font-size: 16px;
-  }
+   Todo campo de digitação fica com pelo menos 16px, em qualquer aparelho. */
+input, textarea, select {
+  font-size: max(16px, 1em);
+}
+input:is(.text-xs, .text-sm), textarea:is(.text-xs, .text-sm), select:is(.text-xs, .text-sm) {
+  font-size: 16px;
 }
 
 /* área de toque de 44px sem mudar o tamanho visual do botão (o elemento precisa ser relative/absolute) */
