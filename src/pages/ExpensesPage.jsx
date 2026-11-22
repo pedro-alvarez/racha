@@ -163,7 +163,7 @@ export default function ExpensesPage() {
               <button
                 onClick={() => setQuery('')}
                 aria-label="Limpar busca"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-muted-light hover:text-white"
+                className="hit-area absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-muted-light hover:text-white"
               >
                 <X size={14} />
               </button>

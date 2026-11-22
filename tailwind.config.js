@@ -1,5 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // hover só em aparelho com mouse: no celular o "hover" ficava grudado depois do toque
+  future: { hoverOnlyWhenSupported: true },
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
@@ -27,6 +29,12 @@ export default {
       },
       borderRadius: {
         '3xl': '24px',
+      },
+      // a escala do toque (propriedade scale) também anima nas classes transition
+      transitionProperty: {
+        DEFAULT:
+          'color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, scale',
+        transform: 'transform, scale',
       },
       boxShadow: {
         fab: '0 8px 24px rgba(240, 20, 107, 0.45)',

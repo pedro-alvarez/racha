@@ -29,7 +29,7 @@ export default function BalanceCard({ tripId, balance }) {
         </p>
         <Link
           to={`/viagem/${tripId}/acertar`}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-bright hover:text-white transition-colors shrink-0 group"
+          className="hit-y relative inline-flex items-center gap-1.5 text-sm font-semibold text-accent-bright hover:text-white transition-colors shrink-0 group"
         >
           Acertar contas
           <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />

@@ -222,7 +222,7 @@ export default function AdminPage() {
               <button
                 onClick={() => approve(p)}
                 disabled={acting === p.id}
-                className="w-9 h-9 rounded-full bg-positive/15 text-positive flex items-center justify-center hover:bg-positive/25 transition disabled:opacity-50"
+                className="hit-area relative w-9 h-9 rounded-full bg-positive/15 text-positive flex items-center justify-center hover:bg-positive/25 transition disabled:opacity-50"
                 aria-label={`Aprovar ${p.name}`}
               >
                 <Check size={16} />
@@ -230,7 +230,7 @@ export default function AdminPage() {
               <button
                 onClick={() => reject(p)}
                 disabled={acting === p.id}
-                className="w-9 h-9 rounded-full bg-accent/15 text-accent-bright flex items-center justify-center hover:bg-accent/25 transition disabled:opacity-50"
+                className="hit-area relative w-9 h-9 rounded-full bg-accent/15 text-accent-bright flex items-center justify-center hover:bg-accent/25 transition disabled:opacity-50"
                 aria-label={`Recusar ${p.name}`}
               >
                 <X size={16} />
@@ -266,7 +266,7 @@ export default function AdminPage() {
                 <button
                   onClick={() => makeTempPassword(u)}
                   disabled={acting === u.id}
-                  className="w-9 h-9 rounded-full bg-white/5 text-muted flex items-center justify-center hover:text-white hover:bg-white/10 transition disabled:opacity-50 shrink-0"
+                  className="hit-area relative w-9 h-9 rounded-full bg-white/5 text-muted flex items-center justify-center hover:text-white hover:bg-white/10 transition disabled:opacity-50 shrink-0"
                   aria-label={`Senha provisória para ${u.name}`}
                   title="Criar senha provisória"
                 >
@@ -277,7 +277,7 @@ export default function AdminPage() {
                 <button
                   onClick={() => remove(u)}
                   disabled={acting === u.id}
-                  className="w-9 h-9 rounded-full bg-white/5 text-muted flex items-center justify-center hover:text-accent-bright hover:bg-accent/10 transition disabled:opacity-50 shrink-0"
+                  className="hit-area relative w-9 h-9 rounded-full bg-white/5 text-muted flex items-center justify-center hover:text-accent-bright hover:bg-accent/10 transition disabled:opacity-50 shrink-0"
                   aria-label={`Remover ${u.name}`}
                 >
                   <Trash2 size={15} />

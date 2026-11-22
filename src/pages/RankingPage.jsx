@@ -11,6 +11,7 @@ import { useApp } from '../context/AppContext';
 import { computeRanking } from '../lib/ranking';
 import { formatCentsAbs, formatDateFull, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
+import FitText from '../components/FitText';
 
 const MEDALHAS = ['🥇', '🥈', '🥉'];
 
@@ -87,7 +88,7 @@ export default function RankingPage() {
         <button
           onClick={compartilhar}
           aria-label="Compartilhar ranking"
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
+          className={`hit-area relative w-9 h-9 rounded-full flex items-center justify-center transition ${
             shared ? 'bg-positive/20 text-positive' : 'bg-white/5 text-muted-light hover:text-white'
           }`}
         >
@@ -110,13 +111,13 @@ export default function RankingPage() {
 
       {/* números da viagem */}
       <section className="card-gradient p-5 mt-4 grid grid-cols-2 gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="label-caps">Total gasto</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums">{formatCentsAbs(r.total)}</p>
+          <FitText className="mt-1 text-2xl font-extrabold tabular-nums">{formatCentsAbs(r.total)}</FitText>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="label-caps">Média por pessoa</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums">{formatCentsAbs(r.average)}</p>
+          <FitText className="mt-1 text-2xl font-extrabold tabular-nums">{formatCentsAbs(r.average)}</FitText>
           <p className="text-[11px] text-muted">total ÷ {r.members} pessoas</p>
         </div>
       </section>

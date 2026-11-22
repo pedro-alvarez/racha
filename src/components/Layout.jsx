@@ -105,7 +105,7 @@ export default function Layout() {
 
       {/* Conteúdo */}
       <div className="flex-1 min-w-0">
-        <main className="max-w-lg md:max-w-3xl mx-auto px-5 md:px-10 pt-4 pb-28 md:pb-12 md:pt-8">
+        <main className="max-w-lg md:max-w-3xl mx-auto px-5 md:px-10 pt-4 pb-[calc(5.5rem+var(--nav-pb))] md:pb-12 md:pt-8">
           {/* entrou com senha provisória: pede para criar a própria */}
           {currentUser.tempPassword && location.pathname !== '/seguranca' && (
             <button
@@ -127,7 +127,7 @@ export default function Layout() {
       </div>
 
       {/* Navegação inferior (mobile) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-ink-soft/95 backdrop-blur border-t border-white/5 px-4 pt-2.5 pb-6">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-ink-soft/95 backdrop-blur border-t border-white/5 px-4 pt-2.5 pb-[var(--nav-pb)]">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           {NAV_ITEMS.map(({ to, label, Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => navClasses(isActive)}>
