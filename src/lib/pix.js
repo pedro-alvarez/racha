@@ -37,6 +37,17 @@ export function chavePix(type, key) {
   return k; // aleatória
 }
 
+const TIPOS = { cpf: 'CPF', celular: 'celular', email: 'e-mail', aleatoria: 'chave aleatória' };
+
+/**
+ * Texto com quem recebe, a chave e o valor, para colar num assistente do banco
+ * (ex.: a IA do Nubank) ou mandar para alguém: "Pix de R$ 65,00 para Natan…".
+ */
+export function textoPix({ name, type, key, amount }) {
+  const valor = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount / 100);
+  return `Pix de ${valor} para ${name}. Chave Pix (${TIPOS[type] ?? 'chave'}): ${key}`;
+}
+
 /**
  * @param {Object} p
  * @param {string} p.key     chave Pix já no formato (use chavePix)

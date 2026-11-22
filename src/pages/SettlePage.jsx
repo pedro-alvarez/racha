@@ -14,6 +14,7 @@ import PaymentModal from '../components/PaymentModal';
 import { formatCentsAbs, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
 import DebtBreakdown from '../components/DebtBreakdown';
+import PixCopy from '../components/PixCopy';
 import { AttachReceiptButton, ReceiptLink } from '../components/Receipt';
 
 export default function SettlePage() {
@@ -222,6 +223,17 @@ export default function SettlePage() {
                 </button>
                 {isOpen && <DebtBreakdown debt={t} />}
 
+                {/* pagar sem digitar: chave + valor (IA do banco) ou Pix copia e cola */}
+                {iPay && (
+                  <PixCopy
+                    to={to}
+                    amount={Math.max(
+                      0,
+                      t.amount - pendingPayments.filter((p) => p.from === t.from && p.to === t.to).reduce((s, p) => s + p.amount, 0)
+                    )}
+                    className="mt-4"
+                  />
+                )}
                 {(mineTransfer || isAdmin) && (
                   <button
                     onClick={() => setPayingTransfer(t)}
