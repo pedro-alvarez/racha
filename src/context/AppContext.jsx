@@ -260,6 +260,18 @@ export function AppProvider({ children }) {
     [refreshAll]
   );
 
+  // encerra ou reabre a viagem (só quem criou ou o admin)
+  const setTripClosed = useCallback(
+    async (tripId, closed) => {
+      await dataService.setTripClosed(tripId, closed);
+      setTrips((prev) =>
+        prev.map((t) => (t.id === tripId ? { ...t, closedAt: closed ? new Date().toISOString() : null } : t))
+      );
+      refreshSoon();
+    },
+    [refreshSoon]
+  );
+
   const deleteTrip = useCallback(
     async (tripId) => {
       await dataService.deleteTrip(tripId);
@@ -320,6 +332,7 @@ export function AppProvider({ children }) {
       createTrip,
       joinTrip,
       deleteTrip,
+      setTripClosed,
       addTripMembers,
       needsOnboarding,
       updateUser,
@@ -348,6 +361,7 @@ export function AppProvider({ children }) {
       createTrip,
       joinTrip,
       deleteTrip,
+      setTripClosed,
       addTripMembers,
       needsOnboarding,
       updateUser,

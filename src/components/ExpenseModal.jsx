@@ -117,6 +117,10 @@ export default function ExpenseModal({ expense, onClose }) {
           </div>
         </div>
 
+        {expense.noRanking && (
+          <p className="mt-2.5 text-xs text-muted">🏆 Esta despesa não conta no ranking.</p>
+        )}
+
         {/* observação e nota fiscal */}
         {(expense.note || expense.receiptPath) && (
           <div className="card-flat p-3.5 mt-2.5">

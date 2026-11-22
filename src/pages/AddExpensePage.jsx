@@ -44,6 +44,7 @@ export default function AddExpensePage() {
   const [note, setNote] = useState(original?.note ?? '');
   const [receiptFile, setReceiptFile] = useState(null); // nota fiscal/comprovante novo
   const [keptReceipt, setKeptReceipt] = useState(original?.receiptPath ?? null); // anexo já salvo
+  const [noRanking, setNoRanking] = useState(original?.noRanking ?? false); // compra pessoal: fora do ranking
   const [splitType, setSplitType] = useState(original?.splitType ?? SPLIT_TYPES.EQUAL);
   const [participants, setParticipants] = useState(
     new Set(original?.participants ?? trip?.members ?? [])
@@ -61,6 +62,20 @@ export default function AddExpensePage() {
   const [saving, setSaving] = useState(false);
 
   if (!trip) return null;
+
+  // viagem encerrada não recebe despesa nova (editar as que existem continua liberado)
+  if (trip.closedAt && !original) {
+    return (
+      <div className="pt-16 text-center">
+        <p className="text-3xl">🏁</p>
+        <p className="mt-3 font-bold">{trip.type === 'role' ? 'Este rolê' : 'Esta viagem'} foi encerrada.</p>
+        <p className="mt-1 text-sm text-muted">Quem criou ou o admin pode reabrir na tela do ranking.</p>
+        <button onClick={() => navigate(-1)} className="mt-5 text-accent-bright font-semibold text-sm">
+          Voltar
+        </button>
+      </div>
+    );
+  }
 
   const amount = parseToCents(amountText);
 
@@ -106,6 +121,7 @@ export default function AddExpensePage() {
       shares: buildShares(),
       note: note.trim(),
       receiptPath: keptReceipt,
+      noRanking,
     };
 
     const { valid, error: validationError } = validateExpense(expense);
@@ -158,6 +174,8 @@ export default function AddExpensePage() {
         old: oldE.receiptPath ? 'anexado' : 'sem anexo',
         new: newE.receiptPath ? (oldE.receiptPath ? 'trocado' : 'anexado') : 'removido',
       });
+    if (Boolean(oldE.noRanking) !== Boolean(newE.noRanking))
+      changes.push({ field: 'ranking', old: oldE.noRanking ? 'fora' : 'conta', new: newE.noRanking ? 'fora' : 'conta' });
     if (oldE.paidBy !== newE.paidBy)
       changes.push({ field: 'quem pagou', old: who(oldE.paidBy), new: who(newE.paidBy) });
     const oldSplit = JSON.stringify({ t: oldE.splitType, p: [...oldE.participants].sort(), s: oldE.shares ?? null });
@@ -395,6 +413,21 @@ export default function AddExpensePage() {
               onRemoveExisting={() => setKeptReceipt(null)}
             />
           </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={noRanking}
+            onClick={() => setNoRanking((v) => !v)}
+            className="mt-3 w-full card-flat p-3.5 flex items-center gap-3 text-left"
+          >
+            <span className="flex-1">
+              <span className="block text-sm font-semibold">Não contar no ranking</span>
+              <span className="block text-xs text-muted">Compra pessoal, presente… Continua valendo nas contas.</span>
+            </span>
+            <span className={`relative w-11 h-6 rounded-full transition shrink-0 ${noRanking ? 'bg-accent' : 'bg-white/15'}`}>
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${noRanking ? 'left-[22px]' : 'left-0.5'}`} />
+            </span>
+          </button>
         </div>
 
         {error && <p className="text-sm text-accent-bright">{error}</p>}

@@ -65,6 +65,7 @@ function TripCard({ trip, onOpen }) {
       </div>
       <h2 className="mt-3 text-xl font-bold">{trip.name}</h2>
       <p className="text-xs text-muted mt-1">
+        {trip.closedAt && <span className="mr-1.5 font-bold text-amber-300">Encerrada ·</span>}
         {trip.members.length} membros · {formatDateRange(trip.startDate, trip.endDate)}
       </p>
       <p className="mt-3 text-sm">
