@@ -7,7 +7,7 @@
  */
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, HandCoins, ReceiptText, Share2, Undo2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, HandCoins, Hourglass, ReceiptText, Share2, Undo2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import PaymentModal from '../components/PaymentModal';
@@ -33,11 +33,27 @@ export default function SettlePage() {
 
   const isAdmin = currentUser.role === 'admin';
   const involvesMe = (t) => t.from === currentUser.id || t.to === currentUser.id;
-  const mine = settlements.filter(involvesMe);
-  const shown = tab === 'mine' ? mine : settlements;
-  const total = settlements.reduce((acc, t) => acc + t.amount, 0);
-  const iOwe = mine.filter((t) => t.from === currentUser.id).reduce((acc, t) => acc + t.amount, 0);
-  const owedToMe = mine.filter((t) => t.to === currentUser.id).reduce((acc, t) => acc + t.amount, 0);
+  // situação de cada dívida: quanto já foi registrado e espera confirmação, e quanto falta
+  const situacao = (t) => {
+    const aguardando = pendingPayments
+      .filter((p) => p.from === t.from && p.to === t.to)
+      .reduce((acc, p) => acc + p.amount, 0);
+    const falta = Math.max(0, t.amount - aguardando);
+    const estado = aguardando === 0 ? 'aberto' : falta === 0 ? 'pago' : 'parcial';
+    return { aguardando, falta, estado };
+  };
+  // em aberto primeiro, depois as pagas em parte e por fim as que só esperam confirmação
+  const ordem = { aberto: 0, parcial: 1, pago: 2 };
+  const ordenar = (lista) =>
+    lista.map((t) => ({ ...t, ...situacao(t) })).sort((a, b) => ordem[a.estado] - ordem[b.estado] || b.amount - a.amount);
+  const mine = ordenar(settlements.filter(involvesMe));
+  const shown = tab === 'mine' ? mine : ordenar(settlements);
+  const total = settlements.reduce((acc, t) => acc + situacao(t).falta, 0);
+  const totalAguardando = settlements.reduce((acc, t) => acc + situacao(t).aguardando, 0);
+  const iOwe = mine.filter((t) => t.from === currentUser.id).reduce((acc, t) => acc + t.falta, 0);
+  const iPaidWaiting = mine.filter((t) => t.from === currentUser.id).reduce((acc, t) => acc + t.aguardando, 0);
+  const owedToMe = mine.filter((t) => t.to === currentUser.id).reduce((acc, t) => acc + t.falta, 0);
+  const toConfirm = mine.filter((t) => t.to === currentUser.id).reduce((acc, t) => acc + t.aguardando, 0);
   const displayName = (u) => (u.id === currentUser.id ? 'Você' : firstName(u.name));
   const descriptionOf = Object.fromEntries(expenses.map((e) => [e.id, e.description]));
   const confirmedList = payments
@@ -137,18 +153,27 @@ export default function SettlePage() {
         {tab === 'mine' ? (
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Você deve</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Falta pagar</p>
               <p className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight">{formatCentsAbs(iOwe)}</p>
+              {iPaidWaiting > 0 && (
+                <p className="mt-1 text-[11px] font-semibold text-white/85">⏳ {formatCentsAbs(iPaidWaiting)} pago, aguardando</p>
+              )}
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Você tem a receber</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Falta receber</p>
               <p className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight">{formatCentsAbs(owedToMe)}</p>
+              {toConfirm > 0 && (
+                <p className="mt-1 text-[11px] font-semibold text-white/85">⏳ {formatCentsAbs(toConfirm)} para você confirmar</p>
+              )}
             </div>
           </div>
         ) : (
           <>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Total pendente da viagem</p>
             <p className="mt-1.5 text-5xl font-extrabold tracking-tight">{formatCentsAbs(total)}</p>
+            {totalAguardando > 0 && (
+              <p className="mt-1 text-xs font-semibold text-white/85">⏳ mais {formatCentsAbs(totalAguardando)} pagos, aguardando confirmação</p>
+            )}
           </>
         )}
         <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-black/25 text-sm font-semibold">
@@ -182,8 +207,28 @@ export default function SettlePage() {
             const mineTransfer = involvesMe(t);
             const iPay = t.from === currentUser.id;
             const iReceive = t.to === currentUser.id;
+            const pago = t.estado === 'pago';
             return (
-              <li key={key} className={`card-flat p-5 ${mineTransfer && tab === 'all' ? 'border-accent/30' : ''}`}>
+              <li
+                key={key}
+                className={`card-flat p-5 ${
+                  pago ? 'border-amber-400/40 bg-amber-400/[0.04]' : mineTransfer && tab === 'all' ? 'border-accent/30' : ''
+                }`}
+              >
+                {t.estado !== 'aberto' && (
+                  <p
+                    className={`-mt-1 mb-3 flex items-center justify-center gap-1.5 text-xs font-bold ${
+                      pago ? 'text-amber-300' : 'text-amber-300/90'
+                    }`}
+                  >
+                    <Hourglass size={13} />
+                    {pago
+                      ? iReceive
+                        ? `${displayName(from)} pagou · falta você confirmar`
+                        : `Pago · aguardando ${iPay ? firstName(to.name) : displayName(to)} confirmar`
+                      : `${formatCentsAbs(t.aguardando)} pago, aguardando confirmação`}
+                  </p>
+                )}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex flex-col items-center gap-1.5 w-20">
                     <div className="relative">
@@ -196,11 +241,16 @@ export default function SettlePage() {
                   </div>
 
                   <div className="flex-1 flex flex-col items-center">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted">paga</p>
-                    <ArrowRight size={16} className="text-accent-bright my-0.5" />
-                    <p className="text-lg font-extrabold text-accent-bright whitespace-nowrap">
-                      {formatCentsAbs(t.amount)}
+                    <p className={`text-[10px] font-bold uppercase tracking-widest ${pago ? 'text-amber-300' : 'text-muted'}`}>
+                      {pago ? 'pagou' : t.estado === 'parcial' ? 'falta' : 'paga'}
                     </p>
+                    <ArrowRight size={16} className={`my-0.5 ${pago ? 'text-amber-300' : 'text-accent-bright'}`} />
+                    <p className={`text-lg font-extrabold whitespace-nowrap ${pago ? 'text-amber-300' : 'text-accent-bright'}`}>
+                      {formatCentsAbs(pago ? t.amount : t.falta)}
+                    </p>
+                    {t.estado === 'parcial' && (
+                      <p className="text-[10px] text-muted whitespace-nowrap">de {formatCentsAbs(t.amount)}</p>
+                    )}
                   </div>
 
                   <div className="flex flex-col items-center gap-1.5 w-20">
@@ -224,29 +274,37 @@ export default function SettlePage() {
                 {isOpen && <DebtBreakdown debt={t} />}
 
                 {/* pagar sem digitar: chave + valor (IA do banco) ou Pix copia e cola */}
-                {iPay && (
-                  <PixCopy
-                    to={to}
-                    amount={Math.max(
-                      0,
-                      t.amount - pendingPayments.filter((p) => p.from === t.from && p.to === t.to).reduce((s, p) => s + p.amount, 0)
-                    )}
-                    className="mt-4"
-                  />
-                )}
-                {(mineTransfer || isAdmin) && (
-                  <button
-                    onClick={() => setPayingTransfer(t)}
-                    className={`mt-4 w-full py-3 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 ${
-                      iPay
-                        ? 'bg-gradient-to-br from-accent to-accent-bright text-white shadow-fab hover:brightness-110'
-                        : 'bg-positive/15 text-positive hover:bg-positive/25'
-                    }`}
-                  >
-                    {iPay ? <HandCoins size={16} /> : <Check size={15} />}
-                    {iPay ? `Pagar ${firstName(to.name)}` : iReceive ? 'Recebi' : 'Registrar pagamento'}
-                  </button>
-                )}
+                {iPay && !pago && <PixCopy to={to} amount={t.falta} className="mt-4" />}
+                {(mineTransfer || isAdmin) &&
+                  (pago && iPay ? (
+                    // já pagou tudo: nada de "Pagar" de novo; dá para ver ou cancelar o que foi registrado
+                    <button
+                      onClick={() => setPayingTransfer(t)}
+                      className="mt-4 w-full py-3 rounded-2xl text-sm font-bold bg-amber-400/10 text-amber-300 hover:bg-amber-400/15 transition flex items-center justify-center gap-2"
+                    >
+                      <Hourglass size={15} /> Ver pagamento enviado
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setPayingTransfer(t)}
+                      className={`mt-4 w-full py-3 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 ${
+                        iPay
+                          ? 'bg-gradient-to-br from-accent to-accent-bright text-white shadow-fab hover:brightness-110'
+                          : 'bg-positive/15 text-positive hover:bg-positive/25'
+                      }`}
+                    >
+                      {iPay ? <HandCoins size={16} /> : <Check size={15} />}
+                      {iPay
+                        ? t.estado === 'parcial'
+                          ? `Pagar o resto · ${formatCentsAbs(t.falta)}`
+                          : `Pagar ${firstName(to.name)}`
+                        : iReceive
+                          ? t.aguardando > 0
+                            ? 'Conferir e confirmar'
+                            : 'Recebi'
+                          : 'Registrar pagamento'}
+                    </button>
+                  ))}
               </li>
             );
           })}
