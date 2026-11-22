@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayLabel, maskCents, parseToCents, todayISO } from './format';
+import { dayLabel, maskCents, maskPercent, parseToCents, todayISO } from './format';
 
 describe('maskCents', () => {
   it('preenche a partir dos centavos', () => {
@@ -18,6 +18,22 @@ describe('maskCents', () => {
 
   it('volta a ser lido em centavos', () => {
     expect(parseToCents(maskCents('123456'))).toBe(123456);
+  });
+});
+
+describe('maskPercent', () => {
+  it('aceita uma vírgula e até 2 casas', () => {
+    expect(maskPercent('33.333')).toBe('33,33');
+    expect(maskPercent('12,5,0')).toBe('12,50');
+    expect(maskPercent(',5')).toBe('0,5');
+    expect(maskPercent('05')).toBe('5');
+    expect(maskPercent('25%')).toBe('25');
+    expect(maskPercent('')).toBe('');
+  });
+
+  it('não passa de 100', () => {
+    expect(maskPercent('150')).toBe('100');
+    expect(maskPercent('100')).toBe('100');
   });
 });
 
