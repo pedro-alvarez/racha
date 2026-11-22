@@ -53,6 +53,7 @@ export const createTrip = route('createTrip');
 export const addTripMembers = route('addTripMembers');
 export const joinTrip = route('joinTrip');
 export const deleteTrip = route('deleteTrip');
+export const setTripClosed = route('setTripClosed');
 
 /* ---------------- Despesas ---------------- */
 

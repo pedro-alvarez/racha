@@ -39,6 +39,8 @@ const mapTrip = (row) => ({
   endDate: row.end_date,
   startTime: row.start_time ?? '',
   createdBy: row.created_by,
+  closedAt: row.closed_at ?? null,
+  closedBy: row.closed_by ?? null,
   members: (row.trip_members ?? []).map((m) => m.user_id),
   createdAt: row.created_at,
 });
@@ -60,6 +62,7 @@ const mapExpense = (row) => {
     splitType: row.split_type,
     note: row.note ?? '',
     receiptPath: row.receipt_path ?? null,
+    noRanking: row.no_ranking ?? false,
     participants: parts.map((p) => p.user_id),
     createdAt: row.created_at,
   };
@@ -367,6 +370,7 @@ export async function updateExpense(expenseId, expense, changes = []) {
       split_type: expense.splitType ?? 'equal',
       note: expense.note ?? '',
       receipt_path: expense.receiptPath ?? null,
+      no_ranking: Boolean(expense.noRanking),
     })
     .eq('id', expenseId);
   if (error) fail(error);
@@ -436,6 +440,7 @@ export async function addExpense(tripId, expense) {
       split_type: expense.splitType ?? 'equal',
       note: expense.note ?? '',
       receipt_path: expense.receiptPath ?? null,
+      no_ranking: Boolean(expense.noRanking),
     })
     .select()
     .single();
@@ -578,6 +583,12 @@ export async function getUserEdits(userId) {
     changes: row.changes ?? [],
     createdAt: row.created_at,
   }));
+}
+
+/** Encerra (closed = true) ou reabre a viagem. Só quem criou ou o admin. */
+export async function setTripClosed(tripId, closed) {
+  const { error } = await supabase.rpc('set_trip_closed', { p_trip: tripId, p_closed: closed });
+  if (error) fail(error);
 }
 
 export async function deleteTrip(tripId) {

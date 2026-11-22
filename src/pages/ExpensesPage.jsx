@@ -122,6 +122,9 @@ export default function ExpensesPage() {
         </p>
         <p className="mt-0.5 text-xs text-muted">
           {expenses.length} {expenses.length === 1 ? 'despesa' : 'despesas'}
+          {trip.members.length > 0 && stats.total > 0 && (
+            <> · média de {formatCentsAbs(Math.round(stats.total / trip.members.length))} por pessoa ({trip.members.length})</>
+          )}
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-black/20 px-3.5 py-2.5">
@@ -138,9 +141,11 @@ export default function ExpensesPage() {
       {expenses.length === 0 ? (
         <div className="card-flat p-6 mt-5 text-center">
           <p className="text-sm text-muted">Nenhuma despesa registrada ainda.</p>
-          <button onClick={addExpense} className="mt-3 inline-flex items-center gap-2 text-accent-bright font-semibold text-sm">
-            <PlusCircle size={17} /> Adicionar despesa
-          </button>
+          {!trip.closedAt && (
+            <button onClick={addExpense} className="mt-3 inline-flex items-center gap-2 text-accent-bright font-semibold text-sm">
+              <PlusCircle size={17} /> Adicionar despesa
+            </button>
+          )}
         </div>
       ) : (
         <>
@@ -212,7 +217,7 @@ export default function ExpensesPage() {
         </>
       )}
 
-      <Fab onClick={addExpense} />
+      {!trip.closedAt && <Fab onClick={addExpense} />}
     </div>
   );
 }

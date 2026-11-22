@@ -25,6 +25,7 @@ import SettlePage from './pages/SettlePage';
 import FriendsPage from './pages/FriendsPage';
 import ActivityPage from './pages/ActivityPage';
 import ExpensesPage from './pages/ExpensesPage';
+import RankingPage from './pages/RankingPage';
 import AccountPage from './pages/AccountPage';
 import SecurityPage from './pages/SecurityPage';
 import AdminPage from './pages/AdminPage';
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/viagem/:tripId/nova-despesa" element={<AddExpensePage />} />
             <Route path="/viagem/:tripId/despesa/:expenseId/editar" element={<AddExpensePage />} />
             <Route path="/viagem/:tripId/acertar" element={<SettlePage />} />
+            <Route path="/viagem/:tripId/ranking" element={<RankingPage />} />
             <Route path="/despesas" element={<ExpensesPage />} />
             <Route path="/amigos" element={<FriendsPage />} />
             <Route path="/atividade" element={<ActivityPage />} />
