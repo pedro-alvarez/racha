@@ -54,6 +54,21 @@ export function maskCents(text) {
   return (Number(digits) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/**
+ * Máscara de porcentagem: só números e uma vírgula, até 2 casas e no máximo
+ * 100 ("33.333" → "33,33", "150" → "100", "05" → "5").
+ */
+export function maskPercent(text) {
+  let t = String(text ?? '').replace(/\./g, ',').replace(/[^\d,]/g, '');
+  const i = t.indexOf(',');
+  if (i >= 0) t = t.slice(0, i + 1) + t.slice(i + 1).replace(/,/g, '').slice(0, 2);
+  let [int, dec] = t.split(',');
+  int = int.replace(/^0+(?=\d)/, '');
+  if (dec !== undefined && int === '') int = '0';
+  t = dec !== undefined ? `${int},${dec}` : int;
+  return parseFloat(t.replace(',', '.')) > 100 ? '100' : t;
+}
+
 export function parseToCents(text) {
   if (text == null || text === '') return 0;
   const clean = String(text).replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');

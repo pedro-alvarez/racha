@@ -9,7 +9,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES } from '../lib/categories';
 import { SPLIT_TYPES, validateExpense, fillRemainder, computeShares } from '../lib/splitEngine';
-import { parseToCents, formatCents, formatDateFull, firstName, maskCents, todayISO } from '../lib/format';
+import { parseToCents, formatCents, formatDateFull, firstName, maskCents, maskPercent, todayISO } from '../lib/format';
 import Avatar from '../components/Avatar';
 import { ReceiptPicker } from '../components/Receipt';
 import * as dataService from '../lib/dataService';
@@ -20,7 +20,7 @@ const SPLIT_OPTIONS = [
   { id: SPLIT_TYPES.PERCENT, label: '%' },
 ];
 
-const centsToText = (cents) => (cents / 100).toFixed(2).replace('.', ',');
+const centsToText = (cents) => maskCents(String(cents)) || '0,00';
 
 export default function AddExpensePage() {
   const { tripId, expenseId } = useParams();
@@ -54,7 +54,7 @@ export default function AddExpensePage() {
     return Object.fromEntries(
       Object.entries(original.shares).map(([id, v]) => [
         id,
-        original.splitType === SPLIT_TYPES.FIXED ? centsToText(v) : String(v),
+        original.splitType === SPLIT_TYPES.FIXED ? centsToText(v) : maskPercent(String(v)),
       ])
     );
   });
@@ -295,7 +295,11 @@ export default function AddExpensePage() {
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setSplitType(opt.id)}
+                  onClick={() => {
+                    // valor em R$ não vale como %: trocar o tipo limpa o que foi digitado
+                    if (opt.id !== splitType) setShareTexts({});
+                    setSplitType(opt.id);
+                  }}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
                     splitType === opt.id ? 'bg-accent text-white' : 'text-muted'
                   }`}
@@ -360,11 +364,14 @@ export default function AddExpensePage() {
                     // digitar o valor não marca/desmarca a pessoa
                     <div className="relative w-28" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <input
-                        inputMode="decimal"
+                        inputMode={splitType === SPLIT_TYPES.PERCENT ? 'decimal' : 'numeric'}
                         className="w-full bg-white/5 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-sm text-right focus:outline-none focus:border-accent/60"
                         placeholder={isBlank(m.id) ? autoLabel(m.id) : '0'}
                         value={shareTexts[m.id] ?? ''}
-                        onChange={(e) => setShareTexts({ ...shareTexts, [m.id]: e.target.value })}
+                        onChange={(e) => {
+                          const mask = splitType === SPLIT_TYPES.PERCENT ? maskPercent : maskCents;
+                          setShareTexts({ ...shareTexts, [m.id]: mask(e.target.value) });
+                        }}
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted">
                         {splitType === SPLIT_TYPES.PERCENT ? '%' : 'R$'}
