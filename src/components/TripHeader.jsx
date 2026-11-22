@@ -1,11 +1,70 @@
 /** Header da viagem/rolê: nome, membros + datas/hora, descrição, avatares.
- *  Admin vê também o botão de apagar (lixeira). */
-import { Flag, Settings, Trash2, UserPlus } from 'lucide-react';
+ *  No topo: sininho de pendências e o menu "⋯" (membros, todas as viagens e,
+ *  para quem pode, encerrar e apagar). */
+import { useEffect, useRef, useState } from 'react';
+import { Flag, LayoutList, MoreHorizontal, Trash2, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AvatarStack from './AvatarStack';
 import PendingBell from './PendingBell';
 import { useApp } from '../context/AppContext';
 import { formatDateRange, tripTypeLabel } from '../lib/format';
+
+/** Menu que abre do botão "⋯": fecha ao tocar fora, no Esc ou ao escolher. */
+function TripMenu({ items }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const fora = (e) => !box.current?.contains(e.target) && setOpen(false);
+    const esc = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('pointerdown', fora);
+    window.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('pointerdown', fora);
+      window.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+
+  return (
+    <div ref={box} className="relative">
+      <button
+        aria-label="Opções da viagem"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={`hit-area relative w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+          open ? 'bg-white/15 text-white' : 'bg-white/5 text-muted-light hover:text-white'
+        }`}
+      >
+        <MoreHorizontal size={18} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="menu-in absolute right-0 top-11 z-40 w-56 rounded-2xl bg-ink-soft border border-white/10 shadow-card p-1.5"
+        >
+          {items.map(({ label, Icon, onSelect, danger }) => (
+            <button
+              key={label}
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onSelect();
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-left transition-colors ${
+                danger ? 'text-red-400 hover:bg-red-500/10' : 'text-white hover:bg-white/5'
+              }`}
+            >
+              <Icon size={17} className={danger ? '' : 'text-muted-light'} />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TripHeader({ trip, abrirPendencias = false, onAbriuPendencias }) {
   const { userById, currentUser, deleteTrip, setTripClosed } = useApp();
@@ -39,39 +98,14 @@ export default function TripHeader({ trip, abrirPendencias = false, onAbriuPende
         {/* pendências: pagamentos para você confirmar */}
         <PendingBell abrir={abrirPendencias} onAbriu={onAbriuPendencias} />
         <span className="flex-1" />
-        {podeEncerrar && (
-          <button
-            aria-label={trip.type === 'role' ? 'Encerrar rolê' : 'Encerrar viagem'}
-            title="Encerrar e ver o ranking final"
-            onClick={handleClose}
-            className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-muted-light hover:text-white transition-colors"
-          >
-            <Flag size={16} />
-          </button>
-        )}
-        {isAdmin && (
-          <button
-            aria-label={isRole ? 'Apagar rolê' : 'Apagar viagem'}
-            onClick={handleDelete}
-            className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-muted-light hover:text-accent-bright hover:bg-accent/10 transition-colors"
-          >
-            <Trash2 size={17} />
-          </button>
-        )}
-        <button
-          aria-label="Membros"
-          onClick={() => navigate(`/viagem/${trip.id}/membros`)}
-          className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-muted-light hover:text-white transition-colors"
-        >
-          <UserPlus size={17} />
-        </button>
-        <button
-          aria-label="Todas as viagens"
-          onClick={() => navigate('/viagens')}
-          className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-muted-light hover:text-white transition-colors"
-        >
-          <Settings size={18} />
-        </button>
+        <TripMenu
+          items={[
+            { label: 'Membros', Icon: UserPlus, onSelect: () => navigate(`/viagem/${trip.id}/membros`) },
+            { label: 'Todas as viagens', Icon: LayoutList, onSelect: () => navigate('/viagens') },
+            ...(podeEncerrar ? [{ label: isRole ? 'Encerrar rolê' : 'Encerrar viagem', Icon: Flag, onSelect: handleClose }] : []),
+            ...(isAdmin ? [{ label: isRole ? 'Apagar rolê' : 'Apagar viagem', Icon: Trash2, onSelect: handleDelete, danger: true }] : []),
+          ]}
+        />
       </div>
       <h1 className="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight">
         {trip.emoji} {trip.name}

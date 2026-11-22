@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* curvas de animação: saída rápida (toque, menus) e gaveta no estilo do iOS */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    /* espaço da barra de baixo: respeita o risquinho do iPhone (área segura) */
+    --nav-pb: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
+  }
   html {
     -webkit-tap-highlight-color: transparent;
   }
@@ -12,6 +19,23 @@
   }
   button:not(:disabled):active, a:active, [role='button']:active, [role='checkbox']:active {
     filter: brightness(0.85);
+  }
+  /* botão afunda de leve ao tocar (scale soma com o transform das classes, não substitui) */
+  button, [role='button'] {
+    transition: scale 160ms var(--ease-out), filter 160ms var(--ease-out);
+  }
+  button:not(:disabled):not(.no-press):active, [role='button']:active {
+    scale: 0.97;
+  }
+  /* segurar o dedo num botão não seleciona o texto dele */
+  button, [role='button'], [role='checkbox'], [role='switch'], [role='tab'] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input, textarea, select {
+    -webkit-user-select: text;
+    user-select: text;
   }
   body {
     @apply bg-ink text-white font-sans antialiased;
@@ -29,6 +53,30 @@
   .label-caps {
     @apply text-[11px] font-semibold uppercase tracking-widest text-muted;
   }
+}
+
+/* iPhone dá zoom ao tocar num campo com letra menor que 16px (e não volta).
+   No celular os campos ficam com 16px; no computador seguem como estão. */
+@media (pointer: coarse) {
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+  input:is(.text-xs, .text-sm), textarea:is(.text-xs, .text-sm), select:is(.text-xs, .text-sm) {
+    font-size: 16px;
+  }
+}
+
+/* área de toque de 44px sem mudar o tamanho visual do botão (o elemento precisa ser relative/absolute) */
+.hit-area::after {
+  content: '';
+  position: absolute;
+  inset: min(0px, calc((100% - 44px) / 2));
+}
+.hit-y::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: min(0px, calc((100% - 44px) / 2));
 }
 
 ::-webkit-scrollbar {
@@ -130,14 +178,53 @@
   }
 }
 
-/* modal de despesa */
+/* gavetas (detalhe da despesa, pagamento, pendências) */
+.sheet {
+  max-height: 88vh;
+  max-height: 88dvh;
+  padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+}
 @keyframes sheetUp {
   from { transform: translateY(100%); }
   to { transform: none; }
 }
-.sheet-up { animation: sheetUp 0.22s cubic-bezier(0.2, 0.7, 0.3, 1); }
+.sheet-up { animation: sheetUp 0.3s var(--ease-drawer); }
+@keyframes sheetDown {
+  to { transform: translateY(100%); }
+}
+.sheet-down { animation: sheetDown 0.2s var(--ease-drawer) forwards; }
 @keyframes overlayIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 .overlay-in { animation: overlayIn 0.15s both; }
+@keyframes overlayOut {
+  to { opacity: 0; }
+}
+.overlay-out { animation: overlayOut 0.2s ease forwards; }
+
+/* menu que abre a partir do botão (cresce do canto em que foi tocado) */
+@keyframes menuIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+.menu-in { transform-origin: top right; animation: menuIn 0.15s var(--ease-out); }
+
+/* "Reduzir movimento" do aparelho: troca deslizes por um esmaecer simples */
+@keyframes fadeOnly {
+  from { opacity: 0; }
+}
+@keyframes fadeAway {
+  to { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter, .stagger > *, .slide-in-right, .slide-in-left, .sheet-up, .menu-in {
+    animation-name: fadeOnly;
+  }
+  .sheet-down {
+    animation-name: fadeAway;
+  }
+  .fab-pop {
+    animation: none;
+  }
+}

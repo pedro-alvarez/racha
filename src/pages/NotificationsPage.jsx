@@ -53,7 +53,7 @@ export default function NotificationsPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-muted-light hover:text-white"
+          className="hit-area relative w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-muted-light hover:text-white"
           aria-label="Voltar"
         >
           <ArrowLeft size={17} />

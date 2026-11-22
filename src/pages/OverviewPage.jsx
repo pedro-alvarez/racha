@@ -96,23 +96,28 @@ export default function OverviewPage() {
 
       {/* indicador de páginas: bolinhas animadas (a ativa vira um traço rosa) */}
       {trips.length > 1 && (
-        <div className="flex justify-center gap-1.5 mt-4">
+        <div className="flex justify-center mt-1">
           {trips.map((t, i) => (
+            // o pontinho é pequeno; o botão em volta dá uma área de toque confortável
             <button
               key={t.id}
               onClick={() => goTo(i, i > index ? 1 : -1)}
               aria-label={`Ir para ${t.name}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === index ? 'w-7 bg-accent' : 'w-1.5 bg-white/15 hover:bg-white/35'
-              }`}
-            />
+              className="group hit-y relative px-[3px] py-3"
+            >
+              <span
+                className={`block h-1.5 rounded-full transition-[width,background-color] duration-300 ${
+                  i === index ? 'w-7 bg-accent' : 'w-1.5 bg-white/15 group-hover:bg-white/35'
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}
 
       {/* seletor de viagens: chips com nome (substitui as bolinhas) */}
       {trips.length > 1 && (
-        <div className="flex gap-2 mt-4 overflow-x-auto pb-1 -mx-5 px-5 md:mx-0 md:px-0 md:justify-center">
+        <div className="flex gap-2 mt-1 overflow-x-auto pb-1 -mx-5 px-5 md:mx-0 md:px-0 md:justify-center">
           {trips.map((t, i) => (
             <button
               key={t.id}
@@ -131,7 +136,7 @@ export default function OverviewPage() {
       )}
 
       <div className="mt-2 text-right">
-        <Link to="/viagens" className="text-xs font-semibold text-muted hover:text-white inline-flex items-center gap-0.5">
+        <Link to="/viagens" className="hit-y relative text-xs font-semibold text-muted hover:text-white inline-flex items-center gap-0.5">
           Todas as viagens <ChevronRight size={14} />
         </Link>
       </div>
@@ -206,7 +211,7 @@ export default function OverviewPage() {
       <section className="mt-7">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">Atividade Recente</h2>
-          <Link to="/atividade" className="text-xs font-semibold text-accent-bright">
+          <Link to="/atividade" className="hit-y relative text-xs font-semibold text-accent-bright">
             Ver tudo
           </Link>
         </div>

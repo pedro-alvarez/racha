@@ -4,13 +4,13 @@
  * viagem. Tocando, abre a lista: confirmar ou recusar ali mesmo, vendo o
  * comprovante. Também lista o que você pagou e ainda espera o outro confirmar.
  */
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Bell, Check, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Bell, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCentsAbs, firstName, formatRelative } from '../lib/format';
 import Avatar from './Avatar';
 import { ReceiptLink } from './Receipt';
+import Sheet from './Sheet';
 
 export function usePendencias() {
   const { trips, paymentsByTrip, expensesByTrip, currentUser } = useApp();
@@ -92,6 +92,7 @@ export default function PendingBell({ abrir = false, onAbriu }) {
   const { paraConfirmar, aguardando } = usePendencias();
   const [open, setOpen] = useState(false);
   const n = paraConfirmar.length;
+  const fechar = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
     if (abrir) {
@@ -100,19 +101,12 @@ export default function PendingBell({ abrir = false, onAbriu }) {
     }
   }, [abrir, onAbriu]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
-
   return (
     <>
       <button
         onClick={() => setOpen(true)}
         aria-label={n ? `${n} pagamento${n > 1 ? 's' : ''} para confirmar` : 'Pendências'}
-        className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+        className={`hit-area relative w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
           n ? 'bg-accent/15 text-accent-bright' : 'bg-white/5 text-muted-light hover:text-white'
         }`}
       >
@@ -124,46 +118,33 @@ export default function PendingBell({ abrir = false, onAbriu }) {
         )}
       </button>
 
-      {open &&
-        createPortal(
-          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-            <button aria-label="Fechar" onClick={() => setOpen(false)} className="absolute inset-0 bg-black/65 backdrop-blur-sm overlay-in" />
-            <div className="relative w-full max-w-lg max-h-[88vh] overflow-y-auto bg-ink-soft border border-white/10 rounded-t-3xl md:rounded-3xl p-6 pb-8 sheet-up">
-              <div className="mx-auto w-10 h-1 rounded-full bg-white/15 mb-5 md:hidden" />
-              <button
-                onClick={() => setOpen(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-white"
-                aria-label="Fechar"
-              >
-                <X size={15} />
-              </button>
-              <h2 className="text-lg font-extrabold">Pendências</h2>
+      {open && (
+        <Sheet onClose={fechar}>
+          <h2 className="text-lg font-extrabold">Pendências</h2>
 
-              <p className="label-caps mt-5">Para você confirmar ({paraConfirmar.length})</p>
-              {paraConfirmar.length === 0 ? (
-                <div className="card-flat p-4 mt-2 text-sm text-muted text-center">Nada para confirmar ✨</div>
-              ) : (
-                <ul className="mt-2 space-y-2.5">
-                  {paraConfirmar.map((p) => (
-                    <Linha key={p.id} p={p} recebo />
-                  ))}
-                </ul>
-              )}
+          <p className="label-caps mt-5">Para você confirmar ({paraConfirmar.length})</p>
+          {paraConfirmar.length === 0 ? (
+            <div className="card-flat p-4 mt-2 text-sm text-muted text-center">Nada para confirmar ✨</div>
+          ) : (
+            <ul className="mt-2 space-y-2.5">
+              {paraConfirmar.map((p) => (
+                <Linha key={p.id} p={p} recebo />
+              ))}
+            </ul>
+          )}
 
-              {aguardando.length > 0 && (
-                <>
-                  <p className="label-caps mt-6">Esperando os outros ({aguardando.length})</p>
-                  <ul className="mt-2 space-y-2.5">
-                    {aguardando.map((p) => (
-                      <Linha key={p.id} p={p} recebo={false} />
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-          </div>,
-          document.body
-        )}
+          {aguardando.length > 0 && (
+            <>
+              <p className="label-caps mt-6">Esperando os outros ({aguardando.length})</p>
+              <ul className="mt-2 space-y-2.5">
+                {aguardando.map((p) => (
+                  <Linha key={p.id} p={p} recebo={false} />
+                ))}
+              </ul>
+            </>
+          )}
+        </Sheet>
+      )}
     </>
   );
 }

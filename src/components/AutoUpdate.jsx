@@ -35,7 +35,7 @@ export default function AutoUpdate() {
     const v = nova.current;
     if (!v) return;
     // nunca no meio de um formulário ou com uma janela aberta: tenta ao mudar de tela
-    if (ROTA_COM_FORMULARIO.test(rota.current) || document.querySelector('.sheet-up')) return;
+    if (ROTA_COM_FORMULARIO.test(rota.current) || document.querySelector('.sheet')) return;
     // evita laço: uma tentativa por versão nesta aba
     try {
       if (sessionStorage.getItem('racha-atualizou') === v) return;

@@ -84,7 +84,7 @@ export function ReceiptPicker({ file, onChange, label = 'Anexar comprovante (opc
             type="button"
             onClick={() => onChange(null)}
             aria-label="Tirar comprovante"
-            className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-white"
+            className="hit-area relative w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-white"
           >
             <X size={15} />
           </button>
@@ -109,7 +109,7 @@ export function ReceiptPicker({ file, onChange, label = 'Anexar comprovante (opc
             type="button"
             onClick={onRemoveExisting}
             aria-label="Tirar anexo"
-            className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-white"
+            className="hit-area relative w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-muted hover:text-white"
           >
             <X size={15} />
           </button>

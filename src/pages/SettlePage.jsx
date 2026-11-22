@@ -11,6 +11,7 @@ import { ArrowLeft, ArrowRight, Check, ChevronDown, HandCoins, Hourglass, Receip
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import PaymentModal from '../components/PaymentModal';
+import FitText from '../components/FitText';
 import { formatCentsAbs, firstName } from '../lib/format';
 import Avatar from '../components/Avatar';
 import DebtBreakdown from '../components/DebtBreakdown';
@@ -120,7 +121,7 @@ export default function SettlePage() {
         </button>
         <button
           onClick={handleShare}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
+          className={`hit-area relative w-9 h-9 rounded-full flex items-center justify-center transition ${
             shared ? 'bg-positive/20 text-positive' : 'bg-white/5 text-muted-light hover:text-white'
           }`}
           aria-label="Compartilhar plano"
@@ -152,16 +153,16 @@ export default function SettlePage() {
       <section className="mt-4 rounded-3xl p-6 bg-gradient-to-br from-accent to-accent-bright shadow-fab">
         {tab === 'mine' ? (
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Falta pagar</p>
-              <p className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight">{formatCentsAbs(iOwe)}</p>
+              <FitText className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight">{formatCentsAbs(iOwe)}</FitText>
               {iPaidWaiting > 0 && (
                 <p className="mt-1 text-[11px] font-semibold text-white/85">⏳ {formatCentsAbs(iPaidWaiting)} pago, aguardando</p>
               )}
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Falta receber</p>
-              <p className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight">{formatCentsAbs(owedToMe)}</p>
+              <FitText className="mt-1.5 text-3xl md:text-4xl font-extrabold tracking-tight">{formatCentsAbs(owedToMe)}</FitText>
               {toConfirm > 0 && (
                 <p className="mt-1 text-[11px] font-semibold text-white/85">⏳ {formatCentsAbs(toConfirm)} para você confirmar</p>
               )}
@@ -170,7 +171,7 @@ export default function SettlePage() {
         ) : (
           <>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Total pendente da viagem</p>
-            <p className="mt-1.5 text-5xl font-extrabold tracking-tight">{formatCentsAbs(total)}</p>
+            <FitText className="mt-1.5 text-5xl font-extrabold tracking-tight">{formatCentsAbs(total)}</FitText>
             {totalAguardando > 0 && (
               <p className="mt-1 text-xs font-semibold text-white/85">⏳ mais {formatCentsAbs(totalAguardando)} pagos, aguardando confirmação</p>
             )}
