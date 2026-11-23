@@ -7,6 +7,8 @@
  *   pagamento    pagamento registrado     -> pendente: quem recebe; já confirmado: quem pagou
  *   confirmacao  pagamento confirmado     -> quem pagou
  *   recusa       pagamento recusado ou cancelado (extra traz from/to/amount, já foi apagado) -> o outro lado
+ *   lembrete     quem tem a receber lembra quem deve (id = viagem, extra.to = quem deve)
+ *                -> quem deve; no máximo 1 por dia (Brasília) por dupla e viagem
  *   teste        aviso de teste           -> a própria pessoa
  *   pedido_senha alguém esqueceu a senha  -> os admins (só chamada interna, pelo banco)
  *
@@ -36,7 +38,7 @@ const primeiro = (nome?: string) => (nome ?? 'Alguém').split(' ')[0];
 
 type Prefs = {
   ativo?: boolean; despesas?: boolean; edicoes?: boolean; pagamentos?: boolean; confirmacoes?: boolean;
-  silencio?: boolean; silencio_inicio?: number; silencio_fim?: number;
+  lembretes?: boolean; silencio?: boolean; silencio_inicio?: number; silencio_fim?: number;
 };
 type Aviso = { para: string; categoria: keyof Prefs | 'teste'; title: string; body: string; url: string; tag: string };
 
@@ -65,6 +67,12 @@ function partes(amount: number, tipo: string, linhas: { user_id: string; share: 
     if (resto > 0) resto--;
   }
   return r;
+}
+
+/** meia-noite de hoje em Brasília (sem horário de verão desde 2019: UTC-3) */
+function inicioDoDia() {
+  const dia = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  return new Date(`${dia}T00:00:00-03:00`).toISOString();
 }
 
 function emSilencio(p: Prefs) {
@@ -112,6 +120,7 @@ Deno.serve(async (req) => {
   const nome = (uid: string) => primeiro(perfil.get(uid)?.name);
   const souAdmin = perfil.get(eu)?.role === 'admin';
   const avisos: Aviso[] = [];
+  let lembrete: { trip_id: string; from_user: string; to_user: string; amount: number } | null = null;
 
   if (tipo === 'pedido_senha') {
     if (!interno) return responder(403, { error: 'Sem permissão.' });
@@ -122,6 +131,54 @@ Deno.serve(async (req) => {
         body: 'Toque para criar uma senha provisória', url: `${SITE}#/admin`, tag: `senha-${quem}`,
       });
     }
+  } else if (tipo === 'lembrete') {
+    // quem chama é quem tem a receber; o valor é calculado aqui, com os dados do banco
+    const deve = String(extra.to ?? '');
+    const { data: viagem } = await admin.from('trips').select('id, name, trip_members(user_id)').eq('id', id).single();
+    if (!viagem) return responder(404, { error: 'Viagem não encontrada.' });
+    const membros = (viagem.trip_members ?? []).map((m: { user_id: string }) => m.user_id);
+    if (!membros.includes(eu) || !membros.includes(deve) || deve === eu) return responder(403, { error: 'Sem permissão.' });
+
+    const { data: despesas } = await admin
+      .from('expenses')
+      .select('amount, paid_by, split_type, expense_participants(user_id, share)')
+      .eq('trip_id', id);
+    const { data: pagos } = await admin.from('payments').select('from_user, to_user, amount, status').eq('trip_id', id);
+    // dívida de "deve" com "eu" (mesma conta do app: cada um paga a quem pagou)
+    let saldo = 0;
+    for (const e of despesas ?? []) {
+      const p = partes(e.amount, e.split_type, e.expense_participants ?? []);
+      if (e.paid_by === eu) saldo += p[deve] ?? 0;
+      if (e.paid_by === deve) saldo -= p[eu] ?? 0;
+    }
+    let aguardando = 0;
+    for (const p of pagos ?? []) {
+      const pendente = p.status === 'pending';
+      if (p.from_user === deve && p.to_user === eu) pendente ? (aguardando += p.amount) : (saldo -= p.amount);
+      if (p.from_user === eu && p.to_user === deve && !pendente) saldo += p.amount;
+    }
+    const falta = saldo - aguardando;
+    if (falta <= 0) {
+      return responder(200, { enviados: 0, motivo: 'nada_a_cobrar', mensagem: `${nome(deve)} não te deve nada agora.` });
+    }
+    const { data: hoje, error: erroHoje } = await admin
+      .from('payment_reminders')
+      .select('id')
+      .eq('trip_id', id).eq('from_user', eu).eq('to_user', deve)
+      .gte('sent_at', inicioDoDia())
+      .limit(1);
+    // sem conseguir conferir o limite de 1 por dia, não manda (nada de lembrete repetido)
+    if (erroHoje) {
+      return responder(200, { enviados: 0, motivo: 'indisponivel', mensagem: 'Os lembretes ainda não estão ativos. Tente mais tarde.' });
+    }
+    if (hoje?.length) {
+      return responder(200, { enviados: 0, motivo: 'ja_lembrou', mensagem: `Você já lembrou ${nome(deve)} hoje. Amanhã dá de novo.` });
+    }
+    avisos.push({
+      para: deve, categoria: 'lembretes', title: `${nome(eu)} lembrou: falta pagar ${reais(falta)}`,
+      body: `Toque para pagar · ${viagem.name}`, url: `${SITE}#/viagem/${id}/acertar`, tag: `lembrete-${id}-${eu}`,
+    });
+    lembrete = { trip_id: String(id), from_user: eu, to_user: deve, amount: falta };
   } else if (tipo === 'teste') {
     avisos.push({
       para: eu, categoria: 'teste', title: 'Notificações do Racha ativadas ✓',
@@ -203,7 +260,18 @@ Deno.serve(async (req) => {
     if (prefs[a.categoria as keyof Prefs] === false) return false;
     return !emSilencio(prefs);
   });
-  if (enviar.length === 0) return responder(200, { enviados: 0 });
+  if (enviar.length === 0) {
+    if (!lembrete) return responder(200, { enviados: 0 });
+    const prefs: Prefs = perfil.get(lembrete.to_user)?.notify_prefs ?? {};
+    const desligou = prefs.ativo === false || prefs.lembretes === false;
+    return responder(200, {
+      enviados: 0,
+      motivo: desligou ? 'desativou' : 'silencio',
+      mensagem: desligou
+        ? `${nome(lembrete.to_user)} desativou os lembretes.`
+        : `${nome(lembrete.to_user)} está no horário de silêncio. Tente mais tarde.`,
+    });
+  }
 
   webpush.setVapidDetails(SITE, cfg.public, cfg.private);
   const { data: aparelhos } = await admin
@@ -234,5 +302,17 @@ Deno.serve(async (req) => {
         }),
     ),
   );
+  if (lembrete) {
+    if (enviados === 0) {
+      return responder(200, {
+        enviados: 0,
+        motivo: 'sem_aparelho',
+        mensagem: `${nome(lembrete.to_user)} não ativou as notificações no celular. Melhor mandar uma mensagem.`,
+      });
+    }
+    // só conta como "lembrou hoje" quando o aviso chegou em pelo menos um aparelho
+    await admin.from('payment_reminders').insert(lembrete);
+    return responder(200, { enviados, mensagem: `Lembrete enviado para ${nome(lembrete.to_user)}.` });
+  }
   return responder(200, { enviados, falhas });
 });

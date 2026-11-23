@@ -83,6 +83,8 @@ export const getPushSubscription = route('getPushSubscription');
 export const enablePush = route('enablePush');
 export const disablePush = route('disablePush');
 export const sendTestPush = route('sendTestPush');
+export const sendReminder = route('sendReminder');
+export const getRemindersToday = route('getRemindersToday');
 export const notify = (...args) => real.notify(...args);
 
 /* ---------------- Administração ---------------- */

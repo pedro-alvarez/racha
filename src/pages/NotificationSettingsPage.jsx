@@ -16,6 +16,7 @@ const PADRAO = {
   edicoes: true,
   pagamentos: true,
   confirmacoes: true,
+  lembretes: true,
   silencio: false,
   silencio_inicio: 23,
   silencio_fim: 8,
@@ -26,6 +27,7 @@ const TIPOS = [
   { id: 'edicoes', label: 'Despesa editada', desc: 'Quando mudam uma despesa e a sua parte' },
   { id: 'pagamentos', label: 'Alguém te pagou', desc: 'Para você conferir e confirmar' },
   { id: 'confirmacoes', label: 'Seu pagamento', desc: 'Quando confirmam ou recusam o que você pagou' },
+  { id: 'lembretes', label: 'Lembretes de pagamento', desc: 'Quando alguém lembra que você ainda deve (no máximo 1 por dia de cada pessoa)' },
 ];
 
 const HORAS = Array.from({ length: 24 }, (_, h) => h);

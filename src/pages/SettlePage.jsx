@@ -5,9 +5,9 @@
  * vem") e o botão de pagamento: "Pagar" para quem deve, "Recebi" para quem
  * recebe e "Registrar pagamento" para o admin nas dívidas dos outros.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, ChevronDown, HandCoins, Hourglass, ReceiptText, Share2, Undo2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BellRing, Check, ChevronDown, HandCoins, Hourglass, ReceiptText, Share2, Undo2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTripSummary } from '../hooks/useTripSummary';
 import PaymentModal from '../components/PaymentModal';
@@ -17,6 +17,7 @@ import Avatar from '../components/Avatar';
 import DebtBreakdown from '../components/DebtBreakdown';
 import PixCopy from '../components/PixCopy';
 import { AttachReceiptButton, ReceiptLink } from '../components/Receipt';
+import * as dataService from '../lib/dataService';
 
 export default function SettlePage() {
   const { tripId } = useParams();
@@ -29,6 +30,16 @@ export default function SettlePage() {
   const [openKey, setOpenKey] = useState(null);
   const [tab, setTab] = useState('mine');
   const [showConfirmed, setShowConfirmed] = useState(false);
+  // lembrete de pagamento: quem já foi lembrado hoje, o que está enviando e a resposta de cada um
+  const [lembrados, setLembrados] = useState(() => new Set());
+  const [lembrando, setLembrando] = useState(null);
+  const [avisoLembrete, setAvisoLembrete] = useState({});
+
+  useEffect(() => {
+    let vivo = true;
+    dataService.getRemindersToday(tripId).then((ids) => vivo && setLembrados(new Set(ids)));
+    return () => (vivo = false);
+  }, [tripId]);
 
   if (!trip) return null;
 
@@ -90,6 +101,21 @@ export default function SettlePage() {
       await declinePayment(paymentId);
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const handleRemind = async (t) => {
+    const quem = firstName(userById(t.from).name);
+    if (!confirm(`Mandar uma notificação lembrando ${quem} de te pagar ${formatCentsAbs(t.falta)}? Dá para lembrar 1 vez por dia.`)) return;
+    setLembrando(t.from);
+    try {
+      const r = await dataService.sendReminder(trip.id, t.from);
+      setAvisoLembrete((a) => ({ ...a, [t.from]: { ok: r?.enviados > 0, texto: r?.mensagem ?? 'Lembrete enviado.' } }));
+      if (r?.enviados > 0 || r?.motivo === 'ja_lembrou') setLembrados((s) => new Set(s).add(t.from));
+    } catch (err) {
+      setAvisoLembrete((a) => ({ ...a, [t.from]: { ok: false, texto: err.message } }));
+    } finally {
+      setLembrando(null);
     }
   };
 
@@ -286,26 +312,45 @@ export default function SettlePage() {
                       <Hourglass size={15} /> Ver pagamento enviado
                     </button>
                   ) : (
-                    <button
-                      onClick={() => setPayingTransfer(t)}
-                      className={`mt-4 w-full py-3 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 ${
-                        iPay
-                          ? 'bg-gradient-to-br from-accent to-accent-bright text-white shadow-fab hover:brightness-110'
-                          : 'bg-positive/15 text-positive hover:bg-positive/25'
-                      }`}
-                    >
-                      {iPay ? <HandCoins size={16} /> : <Check size={15} />}
-                      {iPay
-                        ? t.estado === 'parcial'
-                          ? `Pagar o resto · ${formatCentsAbs(t.falta)}`
-                          : `Pagar ${firstName(to.name)}`
-                        : iReceive
-                          ? t.aguardando > 0
-                            ? 'Conferir e confirmar'
-                            : 'Recebi'
-                          : 'Registrar pagamento'}
-                    </button>
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => setPayingTransfer(t)}
+                        className={`flex-1 py-3 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 ${
+                          iPay
+                            ? 'bg-gradient-to-br from-accent to-accent-bright text-white shadow-fab hover:brightness-110'
+                            : 'bg-positive/15 text-positive hover:bg-positive/25'
+                        }`}
+                      >
+                        {iPay ? <HandCoins size={16} /> : <Check size={15} />}
+                        {iPay
+                          ? t.estado === 'parcial'
+                            ? `Pagar o resto · ${formatCentsAbs(t.falta)}`
+                            : `Pagar ${firstName(to.name)}`
+                          : iReceive
+                            ? t.aguardando > 0
+                              ? 'Conferir e confirmar'
+                              : 'Recebi'
+                            : 'Registrar pagamento'}
+                      </button>
+                      {/* quem tem a receber lembra quem deve (1 vez por dia) */}
+                      {iReceive && t.falta > 0 && (
+                        <button
+                          onClick={() => handleRemind(t)}
+                          disabled={lembrando === t.from || lembrados.has(t.from)}
+                          aria-label={`Lembrar ${firstName(from.name)} de pagar`}
+                          className="px-4 py-3 rounded-2xl text-sm font-bold bg-white/5 text-muted-light hover:text-white transition flex items-center justify-center gap-1.5 disabled:opacity-60"
+                        >
+                          {lembrados.has(t.from) ? <Check size={15} /> : <BellRing size={15} />}
+                          {lembrando === t.from ? 'Enviando…' : lembrados.has(t.from) ? 'Lembrado hoje' : 'Lembrar'}
+                        </button>
+                      )}
+                    </div>
                   ))}
+                {avisoLembrete[t.from] && iReceive && (
+                  <p className={`mt-2 text-xs text-center ${avisoLembrete[t.from].ok ? 'text-positive' : 'text-amber-300'}`}>
+                    {avisoLembrete[t.from].texto}
+                  </p>
+                )}
               </li>
             );
           })}
