@@ -741,6 +741,40 @@ export async function sendTestPush() {
   return data;
 }
 
+/* ---------------- Lembrete de pagamento ---------------- */
+
+/** meia-noite de hoje no horário de Brasília (o limite é 1 lembrete por dia) */
+function inicioDoDiaBrasilia() {
+  const dia = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  return new Date(`${dia}T00:00:00-03:00`).toISOString();
+}
+
+/**
+ * Lembra quem te deve, por notificação. O servidor confere a dívida, o limite
+ * de 1 por dia e as preferências da pessoa, e devolve { enviados, motivo, mensagem }.
+ */
+export async function sendReminder(tripId, toUserId) {
+  const { data, error } = await supabase.functions.invoke('notificar', {
+    body: { tipo: 'lembrete', id: tripId, extra: { to: toUserId } },
+  });
+  if (error) throw new Error('Não deu para mandar o lembrete agora. Tente de novo.');
+  return data;
+}
+
+/** Quem você já lembrou hoje nesta viagem (ids de quem deve). */
+export async function getRemindersToday(tripId) {
+  const me = (await supabase.auth.getSession()).data.session?.user?.id;
+  if (!me) return [];
+  const { data, error } = await supabase
+    .from('payment_reminders')
+    .select('to_user')
+    .eq('trip_id', tripId)
+    .eq('from_user', me)
+    .gte('sent_at', inicioDoDiaBrasilia());
+  if (error) return []; // sem a tabela ou sem internet: o botão aparece e o servidor decide
+  return data.map((r) => r.to_user);
+}
+
 /** Avisa quem precisa saber de uma ação (em segundo plano: nunca trava o app). */
 export function notify(tipo, id, extra = {}) {
   supabase.functions.invoke('notificar', { body: { tipo, id, extra } }).then(
